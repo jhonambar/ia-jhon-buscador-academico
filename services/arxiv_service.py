@@ -1,15 +1,29 @@
 import re
+import time
+import threading
 import requests
 import xml.etree.ElementTree as ET
 
 
 URL_ARXIV = "https://export.arxiv.org/api/query"
 
+TIEMPO_ENTRE_PETICIONES = 3
+
+HEADERS = {
+    "User-Agent": (
+        "IA-Jhon-Buscador-Academico/1.0 "
+        "(academic research search application)"
+    )
+}
 
 NS = {
     "atom": "http://www.w3.org/2005/Atom",
     "arxiv": "http://arxiv.org/schemas/atom"
 }
+
+
+_bloqueo_peticion = threading.Lock()
+_ultima_peticion = 0.0
 
 
 def limpiar_texto(texto):
@@ -25,6 +39,114 @@ def limpiar_texto(texto):
         " ",
         texto
     ).strip()
+
+
+def esperar_turno_peticion():
+    """
+    Evita realizar peticiones a arXiv
+    demasiado seguidas.
+    """
+
+    global _ultima_peticion
+
+    with _bloqueo_peticion:
+
+        ahora = time.monotonic()
+
+        transcurrido = (
+            ahora - _ultima_peticion
+        )
+
+        if (
+            _ultima_peticion
+            and transcurrido
+            < TIEMPO_ENTRE_PETICIONES
+        ):
+
+            espera = (
+                TIEMPO_ENTRE_PETICIONES
+                - transcurrido
+            )
+
+            time.sleep(
+                espera
+            )
+
+        _ultima_peticion = (
+            time.monotonic()
+        )
+
+
+def realizar_peticion(
+    parametros,
+    intentos=3
+):
+    """
+    Realiza una petición a arXiv.
+
+    Reintenta automáticamente ante
+    errores temporales.
+    """
+
+    for intento in range(
+        1,
+        intentos + 1
+    ):
+
+        esperar_turno_peticion()
+
+        try:
+
+            respuesta = requests.get(
+                URL_ARXIV,
+                params=parametros,
+                headers=HEADERS,
+                timeout=25
+            )
+
+        except requests.RequestException as error:
+
+            print(
+                "[arXiv] Error de conexión "
+                f"(intento {intento}/{intentos}): "
+                f"{error}"
+            )
+
+            if intento == intentos:
+                return None
+
+            continue
+
+        if respuesta.status_code == 200:
+            return respuesta
+
+        if respuesta.status_code in (
+            429,
+            500,
+            502,
+            503,
+            504
+        ):
+
+            print(
+                "[arXiv] Respuesta temporal "
+                f"HTTP {respuesta.status_code} "
+                f"(intento {intento}/{intentos})"
+            )
+
+            if intento == intentos:
+                return None
+
+            continue
+
+        print(
+            "[arXiv] Error HTTP "
+            f"{respuesta.status_code}"
+        )
+
+        return None
+
+    return None
 
 
 def obtener_id_arxiv(url_id):
@@ -59,7 +181,10 @@ def obtener_doi(entry):
         NS
     )
 
-    if doi is not None and doi.text:
+    if (
+        doi is not None
+        and doi.text
+    ):
         return doi.text.strip()
 
     return ""
@@ -67,7 +192,8 @@ def obtener_doi(entry):
 
 def obtener_revista(entry):
     """
-    Obtiene referencia de revista si está disponible.
+    Obtiene referencia de revista
+    si está disponible.
     """
 
     journal = entry.find(
@@ -75,7 +201,10 @@ def obtener_revista(entry):
         NS
     )
 
-    if journal is not None and journal.text:
+    if (
+        journal is not None
+        and journal.text
+    ):
         return limpiar_texto(
             journal.text
         )
@@ -107,7 +236,8 @@ def obtener_pdf(entry):
 
 def obtener_url_publicacion(entry):
     """
-    Obtiene la página principal del artículo.
+    Obtiene la página principal
+    del artículo.
     """
 
     for enlace in entry.findall(
@@ -115,7 +245,10 @@ def obtener_url_publicacion(entry):
         NS
     ):
 
-        if enlace.attrib.get("rel") == "alternate":
+        if (
+            enlace.attrib.get("rel")
+            == "alternate"
+        ):
             return enlace.attrib.get(
                 "href",
                 ""
@@ -274,13 +407,13 @@ def convertir_entry(entry):
             url_pdf,
 
         "citas":
-            0,
+            "N/D",
 
         "idioma":
             "N/D",
 
         "tipo":
-            "preprint",
+            "article / preprint",
 
         "acceso_abierto":
             True,
@@ -352,30 +485,27 @@ def buscar_arxiv(
     )
 
     parametros = {
-        "search_query": consulta,
-        "start": 0,
-        "max_results": cantidad,
-        "sortBy": "relevance",
-        "sortOrder": "descending"
+        "search_query":
+            consulta,
+
+        "start":
+            0,
+
+        "max_results":
+            cantidad,
+
+        "sortBy":
+            "relevance",
+
+        "sortOrder":
+            "descending"
     }
 
-    try:
+    respuesta = realizar_peticion(
+        parametros
+    )
 
-        respuesta = requests.get(
-            URL_ARXIV,
-            params=parametros,
-            timeout=25
-        )
-
-        respuesta.raise_for_status()
-
-    except requests.RequestException as error:
-
-        print(
-            "[arXiv] Error de conexión: "
-            f"{error}"
-        )
-
+    if respuesta is None:
         return []
 
     try:
@@ -428,26 +558,15 @@ def obtener_trabajo_arxiv(
         return None
 
     parametros = {
-        "id_list": id_arxiv
+        "id_list":
+            id_arxiv
     }
 
-    try:
+    respuesta = realizar_peticion(
+        parametros
+    )
 
-        respuesta = requests.get(
-            URL_ARXIV,
-            params=parametros,
-            timeout=25
-        )
-
-        respuesta.raise_for_status()
-
-    except requests.RequestException as error:
-
-        print(
-            "[arXiv] Error al obtener detalle: "
-            f"{error}"
-        )
-
+    if respuesta is None:
         return None
 
     try:
@@ -459,7 +578,8 @@ def obtener_trabajo_arxiv(
     except ET.ParseError as error:
 
         print(
-            "[arXiv] XML inválido en detalle: "
+            "[arXiv] XML inválido "
+            "en detalle: "
             f"{error}"
         )
 
