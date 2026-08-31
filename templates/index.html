@@ -10,7 +10,7 @@
     >
 
     <title>
-        IA Jhon - Búsqueda Académica
+        IA Jhon - Buscador Académico
     </title>
 
     <style>
@@ -22,37 +22,70 @@
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background: #f4f7fb;
+            background: #f3f6fb;
             color: #1f2937;
+        }
+
+        .barra-superior {
+            background: #0f172a;
+            color: white;
+            padding: 18px 0;
+        }
+
+        .barra-contenido {
+            width: 92%;
+            max-width: 1200px;
+            margin: auto;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .marca {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .estado-sistema {
+            font-size: 13px;
+            background: rgba(255,255,255,.12);
+            padding: 7px 11px;
+            border-radius: 999px;
         }
 
         .contenedor {
             width: 92%;
-            max-width: 1150px;
-            margin: 40px auto;
+            max-width: 1200px;
+            margin: 35px auto 60px;
         }
 
-        .cabecera {
+        .hero {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 28px;
         }
 
-        .cabecera h1 {
-            font-size: 44px;
-            margin-bottom: 8px;
+        .hero h1 {
+            margin: 0;
+            font-size: 42px;
+            color: #111827;
         }
 
-        .cabecera p {
-            color: #6b7280;
+        .hero p {
+            color: #64748b;
             font-size: 18px;
+            margin-top: 10px;
         }
 
         .panel {
             background: white;
             border-radius: 20px;
             padding: 28px;
-            box-shadow: 0 10px 35px rgba(0,0,0,.08);
-            margin-bottom: 30px;
+            box-shadow:
+                0 10px 35px rgba(15, 23, 42, .08);
+
+            margin-bottom: 28px;
         }
 
         .busqueda {
@@ -63,51 +96,88 @@
 
         .busqueda input {
             flex: 1;
-            padding: 15px;
+            padding: 16px;
             font-size: 16px;
-            border: 1px solid #d1d5db;
+
+            border:
+                1px solid #cbd5e1;
+
             border-radius: 12px;
+            outline: none;
+        }
+
+        .busqueda input:focus {
+            border-color: #334155;
         }
 
         .busqueda button {
-            padding: 15px 26px;
             border: none;
             border-radius: 12px;
-            background: #111827;
+
+            padding: 15px 28px;
+
+            background: #0f172a;
             color: white;
+
             font-size: 16px;
+            font-weight: bold;
+
             cursor: pointer;
+        }
+
+        .busqueda button:hover {
+            background: #1e293b;
         }
 
         .filtros {
             display: grid;
+
             grid-template-columns:
                 repeat(
                     auto-fit,
-                    minmax(180px, 1fr)
+                    minmax(190px, 1fr)
                 );
-            gap: 14px;
+
+            gap: 15px;
         }
 
         .campo label {
             display: block;
-            font-size: 14px;
-            margin-bottom: 6px;
-            color: #4b5563;
+            margin-bottom: 7px;
+
+            color: #475569;
+            font-size: 13px;
+            font-weight: bold;
         }
 
         .campo input,
         .campo select {
             width: 100%;
+
             padding: 11px;
-            border: 1px solid #d1d5db;
+
+            border:
+                1px solid #cbd5e1;
+
             border-radius: 10px;
+
+            background: white;
         }
 
         .fuentes {
-            margin-top: 20px;
-            padding-top: 18px;
-            border-top: 1px solid #e5e7eb;
+            margin-top: 22px;
+            padding-top: 20px;
+
+            border-top:
+                1px solid #e2e8f0;
+        }
+
+        .fuentes-titulo {
+            margin-bottom: 10px;
+
+            font-size: 14px;
+            color: #475569;
+            font-weight: bold;
         }
 
         .etiquetas {
@@ -117,67 +187,137 @@
         }
 
         .etiqueta {
-            background: #eef2ff;
             padding: 7px 11px;
+
             border-radius: 999px;
+
+            background: #f1f5f9;
+            color: #475569;
+
             font-size: 13px;
         }
 
+        .etiqueta.activa {
+            background: #dcfce7;
+            color: #166534;
+            font-weight: bold;
+        }
+
         .mensaje {
-            background: #fff3cd;
-            border: 1px solid #ffe69c;
-            padding: 14px;
-            border-radius: 10px;
+            background: #fff7ed;
+            border: 1px solid #fed7aa;
+
+            padding: 15px;
+
+            border-radius: 12px;
+
             margin-bottom: 20px;
+
+            color: #9a3412;
+        }
+
+        .cabecera-resultados {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+
+            margin-bottom: 18px;
         }
 
         .resumen-resultados {
-            margin-bottom: 18px;
-            font-weight: bold;
             font-size: 18px;
+            font-weight: bold;
+        }
+
+        .consulta {
+            color: #64748b;
+            font-size: 14px;
         }
 
         .resultado {
             background: white;
+
             border-radius: 18px;
-            padding: 22px;
+
+            padding: 24px;
+
             margin-bottom: 18px;
+
             box-shadow:
-                0 6px 22px rgba(0,0,0,.07);
+                0 7px 25px rgba(15,23,42,.07);
+
+            border:
+                1px solid #eef2f7;
+        }
+
+        .resultado:hover {
+            box-shadow:
+                0 10px 30px rgba(15,23,42,.11);
+        }
+
+        .resultado-superior {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
         }
 
         .resultado h2 {
             margin-top: 0;
+            margin-bottom: 10px;
+
             font-size: 21px;
+            line-height: 1.4;
+
+            color: #0f172a;
+        }
+
+        .fuente-badge {
+            white-space: nowrap;
+
+            background: #e0f2fe;
+            color: #075985;
+
+            padding: 6px 10px;
+
+            border-radius: 999px;
+
+            font-size: 12px;
+            font-weight: bold;
         }
 
         .meta {
-            color: #6b7280;
+            color: #64748b;
+
             font-size: 14px;
-            line-height: 1.7;
-            margin-bottom: 12px;
+            line-height: 1.8;
         }
 
-        .acciones {
+        .meta strong {
+            color: #334155;
+        }
+
+        .datos-rapidos {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+
+            gap: 8px;
+
             margin-top: 14px;
         }
 
-        .boton {
-            display: inline-block;
-            padding: 10px 14px;
-            border-radius: 9px;
-            background: #111827;
-            color: white;
-            text-decoration: none;
-            font-size: 14px;
-        }
+        .dato {
+            background: #f8fafc;
 
-        .boton.secundario {
-            background: #e5e7eb;
-            color: #111827;
+            border:
+                1px solid #e2e8f0;
+
+            border-radius: 8px;
+
+            padding: 7px 10px;
+
+            font-size: 13px;
         }
 
         .oa {
@@ -190,15 +330,83 @@
             font-weight: bold;
         }
 
+        .acciones {
+            display: flex;
+            flex-wrap: wrap;
+
+            gap: 9px;
+
+            margin-top: 18px;
+        }
+
+        .boton {
+            display: inline-block;
+
+            padding: 10px 14px;
+
+            border-radius: 9px;
+
+            background: #0f172a;
+            color: white;
+
+            text-decoration: none;
+
+            font-size: 14px;
+        }
+
+        .boton:hover {
+            background: #1e293b;
+        }
+
+        .boton.secundario {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .boton.secundario:hover {
+            background: #cbd5e1;
+        }
+
+        .sin-resultados {
+            text-align: center;
+            color: #64748b;
+            padding: 30px;
+        }
+
+        .pie {
+            text-align: center;
+
+            color: #94a3b8;
+
+            font-size: 13px;
+
+            margin-top: 35px;
+        }
+
         @media (max-width: 700px) {
+
+            .barra-contenido {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .hero h1 {
+                font-size: 32px;
+            }
 
             .busqueda {
                 flex-direction: column;
             }
 
-            .cabecera h1 {
-                font-size: 34px;
+            .resultado-superior {
+                flex-direction: column;
             }
+
+            .cabecera-resultados {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
         }
 
     </style>
@@ -207,20 +415,37 @@
 
 <body>
 
+<div class="barra-superior">
+
+    <div class="barra-contenido">
+
+        <div class="marca">
+            IA Jhon
+        </div>
+
+        <div class="estado-sistema">
+            Buscador académico en línea
+        </div>
+
+    </div>
+
+</div>
+
 <div class="contenedor">
 
-    <div class="cabecera">
+    <section class="hero">
 
         <h1>
-            IA Jhon
+            Buscador Académico Inteligente
         </h1>
 
         <p>
-            Búsqueda Académica de Artículos,
-            Tesis y Revistas Científicas
+            Encuentra artículos, tesis, libros
+            y publicaciones científicas
+            desde fuentes académicas confiables.
         </p>
 
-    </div>
+    </section>
 
     <div class="panel">
 
@@ -235,7 +460,7 @@
                     type="text"
                     name="tema"
                     value="{{ tema }}"
-                    placeholder="Ejemplo: inteligencia artificial generativa"
+                    placeholder="¿Qué tema quieres investigar?"
                     required
                 >
 
@@ -372,14 +597,14 @@
 
         <div class="fuentes">
 
-            <strong>
-                Fuente activa:
-            </strong>
+            <div class="fuentes-titulo">
+                Fuentes académicas
+            </div>
 
             <div class="etiquetas">
 
-                <span class="etiqueta">
-                    OpenAlex ✅
+                <span class="etiqueta activa">
+                    OpenAlex ●
                 </span>
 
                 <span class="etiqueta">
@@ -414,72 +639,109 @@
 
     {% if busqueda_realizada %}
 
-        <div class="resumen-resultados">
+        <div class="cabecera-resultados">
 
-            ✅ {{ resultados|length }}
-            publicaciones encontradas
+            <div class="resumen-resultados">
+                {{ resultados|length }}
+                publicaciones encontradas
+            </div>
+
+            {% if tema %}
+
+                <div class="consulta">
+                    Consulta:
+                    <strong>
+                        {{ tema }}
+                    </strong>
+                </div>
+
+            {% endif %}
 
         </div>
 
         {% for r in resultados %}
 
-            <div class="resultado">
+            <article class="resultado">
 
-                <h2>
-                    {{ r.titulo }}
-                </h2>
+                <div class="resultado-superior">
 
-                <div class="meta">
+                    <div>
 
-                    <strong>
-                        Autores:
-                    </strong>
+                        <h2>
+                            {{ r.titulo }}
+                        </h2>
 
-                    {{ r.autores }}
+                        <div class="meta">
 
-                    <br>
+                            <strong>
+                                Autores:
+                            </strong>
 
-                    <strong>
+                            {{ r.autores }}
+
+                            <br>
+
+                            <strong>
+                                Revista/Fuente:
+                            </strong>
+
+                            {{ r.revista }}
+
+                        </div>
+
+                    </div>
+
+                    <div class="fuente-badge">
+                        {{ r.fuente_busqueda }}
+                    </div>
+
+                </div>
+
+                <div class="datos-rapidos">
+
+                    <span class="dato">
                         Año:
-                    </strong>
+                        {{ r.anio }}
+                    </span>
 
-                    {{ r.anio }}
-
-                    <br>
-
-                    <strong>
-                        Revista/Fuente:
-                    </strong>
-
-                    {{ r.revista }}
-
-                    <br>
-
-                    <strong>
+                    <span class="dato">
                         Tipo:
-                    </strong>
+                        {{ r.tipo }}
+                    </span>
 
-                    {{ r.tipo }}
-
-                    <br>
-
-                    <strong>
+                    <span class="dato">
                         Idioma:
-                    </strong>
+                        {{ r.idioma }}
+                    </span>
 
-                    {{ r.idioma }}
-
-                    <br>
-
-                    <strong>
+                    <span class="dato">
                         Citas:
-                    </strong>
+                        {{ r.citas }}
+                    </span>
 
-                    {{ r.citas }}
+                    <span class="dato">
 
-                    <br>
+                        {% if r.acceso_abierto %}
 
-                    {% if r.doi %}
+                            <span class="oa">
+                                Acceso abierto
+                            </span>
+
+                        {% else %}
+
+                            <span class="cerrado">
+                                Acceso restringido
+                            </span>
+
+                        {% endif %}
+
+                    </span>
+
+                </div>
+
+                {% if r.doi %}
+
+                    <div class="meta">
 
                         <strong>
                             DOI:
@@ -487,29 +749,9 @@
 
                         {{ r.doi }}
 
-                        <br>
+                    </div>
 
-                    {% endif %}
-
-                    <strong>
-                        Acceso:
-                    </strong>
-
-                    {% if r.acceso_abierto %}
-
-                        <span class="oa">
-                            Open Access
-                        </span>
-
-                    {% else %}
-
-                        <span class="cerrado">
-                            No abierto
-                        </span>
-
-                    {% endif %}
-
-                </div>
+                {% endif %}
 
                 <div class="acciones">
 
@@ -555,11 +797,23 @@
 
                 </div>
 
-            </div>
+            </article>
 
         {% endfor %}
 
+        {% if resultados|length == 0 %}
+
+            <div class="sin-resultados">
+                No hay publicaciones para mostrar.
+            </div>
+
+        {% endif %}
+
     {% endif %}
+
+    <div class="pie">
+        IA Jhon · Sistema de búsqueda académica
+    </div>
 
 </div>
 

@@ -1,12 +1,20 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>{{ articulo.titulo }} - IA Jhon</title>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {{ articulo.titulo }} - IA Jhon
+    </title>
 
     <style>
+
         * {
             box-sizing: border-box;
         }
@@ -14,66 +22,160 @@
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background: #f4f7fb;
+            background: #f3f6fb;
             color: #1f2937;
+        }
+
+        .barra-superior {
+            background: #0f172a;
+            color: white;
+            padding: 18px 0;
+        }
+
+        .barra-contenido {
+            width: 92%;
+            max-width: 1100px;
+            margin: auto;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .marca {
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .estado {
+            font-size: 13px;
+
+            background: rgba(255,255,255,.12);
+
+            padding: 7px 11px;
+
+            border-radius: 999px;
         }
 
         .contenedor {
             width: 92%;
-            max-width: 1000px;
-            margin: 40px auto;
+            max-width: 1100px;
+            margin: 32px auto 60px;
         }
 
         .volver {
             display: inline-block;
-            margin-bottom: 20px;
+
+            margin-bottom: 18px;
+
             text-decoration: none;
-            color: #111827;
+
+            color: #334155;
+
             font-weight: bold;
+            font-size: 14px;
+        }
+
+        .volver:hover {
+            color: #0f172a;
         }
 
         .tarjeta {
             background: white;
+
             border-radius: 20px;
+
             padding: 30px;
-            box-shadow: 0 10px 35px rgba(0,0,0,.08);
+
+            box-shadow:
+                0 10px 35px rgba(15,23,42,.08);
+
+            border:
+                1px solid #eef2f7;
+        }
+
+        .encabezado-articulo {
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: flex-start;
+
+            gap: 20px;
+
+            margin-bottom: 22px;
         }
 
         h1 {
             margin-top: 0;
-            line-height: 1.3;
+            margin-bottom: 0;
+
+            font-size: 30px;
+
+            line-height: 1.35;
+
+            color: #0f172a;
         }
 
-        .bloque {
-            margin-top: 25px;
-        }
+        .fuente-badge {
+            white-space: nowrap;
 
-        .bloque h2 {
-            font-size: 19px;
-            margin-bottom: 10px;
-        }
+            background: #e0f2fe;
+            color: #075985;
 
-        .meta {
-            line-height: 1.8;
-            color: #4b5563;
-        }
+            padding: 7px 11px;
 
-        .abstract {
-            line-height: 1.8;
-            text-align: justify;
-        }
-
-        .etiquetas {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .etiqueta {
-            background: #eef2ff;
-            padding: 8px 11px;
             border-radius: 999px;
-            font-size: 13px;
+
+            font-size: 12px;
+
+            font-weight: bold;
+        }
+
+        .datos {
+            display: grid;
+
+            grid-template-columns:
+                repeat(
+                    auto-fit,
+                    minmax(220px, 1fr)
+                );
+
+            gap: 12px;
+
+            margin-top: 22px;
+        }
+
+        .dato {
+            background: #f8fafc;
+
+            border:
+                1px solid #e2e8f0;
+
+            border-radius: 12px;
+
+            padding: 13px;
+        }
+
+        .dato-titulo {
+            display: block;
+
+            color: #64748b;
+
+            font-size: 12px;
+
+            margin-bottom: 5px;
+
+            font-weight: bold;
+        }
+
+        .dato-valor {
+            color: #334155;
+
+            font-size: 14px;
+
+            line-height: 1.5;
         }
 
         .oa {
@@ -86,128 +188,379 @@
             font-weight: bold;
         }
 
+        .bloque {
+            margin-top: 30px;
+        }
+
+        .bloque h2 {
+            margin-bottom: 12px;
+
+            font-size: 19px;
+
+            color: #0f172a;
+
+            padding-bottom: 8px;
+
+            border-bottom:
+                1px solid #e2e8f0;
+        }
+
+        .abstract {
+            line-height: 1.8;
+
+            color: #475569;
+
+            text-align: justify;
+        }
+
+        .etiquetas {
+            display: flex;
+
+            flex-wrap: wrap;
+
+            gap: 8px;
+        }
+
+        .etiqueta {
+            background: #f1f5f9;
+
+            border:
+                1px solid #e2e8f0;
+
+            color: #475569;
+
+            padding: 8px 11px;
+
+            border-radius: 999px;
+
+            font-size: 13px;
+        }
+
+        .referencia {
+            background: #f8fafc;
+
+            border:
+                1px solid #e2e8f0;
+
+            padding: 18px;
+
+            border-radius: 12px;
+
+            line-height: 1.8;
+
+            color: #475569;
+        }
+
         .acciones {
             display: flex;
+
             flex-wrap: wrap;
-            gap: 12px;
+
+            gap: 10px;
+
             margin-top: 30px;
+
+            padding-top: 22px;
+
+            border-top:
+                1px solid #e2e8f0;
         }
 
         .boton {
             display: inline-block;
+
             text-decoration: none;
-            background: #111827;
+
+            background: #0f172a;
+
             color: white;
-            padding: 12px 16px;
-            border-radius: 10px;
+
+            padding: 11px 15px;
+
+            border-radius: 9px;
+
+            font-size: 14px;
+        }
+
+        .boton:hover {
+            background: #1e293b;
         }
 
         .boton.secundario {
-            background: #e5e7eb;
-            color: #111827;
+            background: #e2e8f0;
+
+            color: #0f172a;
         }
 
-        .referencia {
-            background: #f9fafb;
-            border: 1px solid #e5e7eb;
-            padding: 18px;
-            border-radius: 12px;
-            line-height: 1.7;
+        .boton.secundario:hover {
+            background: #cbd5e1;
         }
+
+        .pie {
+            text-align: center;
+
+            color: #94a3b8;
+
+            font-size: 13px;
+
+            margin-top: 30px;
+        }
+
+        @media (max-width: 700px) {
+
+            .barra-contenido {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .encabezado-articulo {
+                flex-direction: column;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .tarjeta {
+                padding: 20px;
+            }
+
+        }
+
     </style>
+
 </head>
 
 <body>
 
+<div class="barra-superior">
+
+    <div class="barra-contenido">
+
+        <div class="marca">
+            IA Jhon
+        </div>
+
+        <div class="estado">
+            Información de publicación
+        </div>
+
+    </div>
+
+</div>
+
 <div class="contenedor">
 
-    <a href="/" class="volver">
-        ← Volver a resultados
+    <a
+        href="/"
+        class="volver"
+    >
+        ← Volver al buscador
     </a>
 
     <div class="tarjeta">
 
-        <h1>
-            {{ articulo.titulo }}
-        </h1>
+        <div class="encabezado-articulo">
 
-        <div class="meta">
+            <h1>
+                {{ articulo.titulo }}
+            </h1>
 
-            <strong>Autores:</strong>
-            {{ articulo.autores }}
-            <br>
-
-            <strong>Instituciones:</strong>
-            {{ articulo.instituciones }}
-            <br>
-
-            <strong>Año:</strong>
-            {{ articulo.anio }}
-            <br>
-
-            <strong>Fecha de publicación:</strong>
-            {{ articulo.fecha_publicacion }}
-            <br>
-
-            <strong>Revista / Fuente:</strong>
-            {{ articulo.revista }}
-            <br>
-
-            <strong>Tipo:</strong>
-            {{ articulo.tipo }}
-            <br>
-
-            <strong>Idioma:</strong>
-            {{ articulo.idioma }}
-            <br>
-
-            <strong>Citas:</strong>
-            {{ articulo.citas }}
-            <br>
-
-            {% if articulo.doi %}
-                <strong>DOI:</strong>
-                {{ articulo.doi }}
-                <br>
-            {% endif %}
-
-            <strong>Acceso:</strong>
-
-            {% if articulo.acceso_abierto %}
-                <span class="oa">
-                    Open Access
-                </span>
-            {% else %}
-                <span class="cerrado">
-                    No abierto
-                </span>
-            {% endif %}
+            <div class="fuente-badge">
+                {{ articulo.fuente_busqueda }}
+            </div>
 
         </div>
 
-        <div class="bloque">
+        <div class="datos">
 
-            <h2>Resumen / Abstract</h2>
+            <div class="dato">
 
-            <div class="abstract">
-                {{ articulo.abstract }}
+                <span class="dato-titulo">
+                    Autores
+                </span>
+
+                <span class="dato-valor">
+                    {{ articulo.autores }}
+                </span>
+
+            </div>
+
+            <div class="dato">
+
+                <span class="dato-titulo">
+                    Instituciones
+                </span>
+
+                <span class="dato-valor">
+                    {{ articulo.instituciones }}
+                </span>
+
+            </div>
+
+            <div class="dato">
+
+                <span class="dato-titulo">
+                    Año
+                </span>
+
+                <span class="dato-valor">
+                    {{ articulo.anio }}
+                </span>
+
+            </div>
+
+            <div class="dato">
+
+                <span class="dato-titulo">
+                    Fecha de publicación
+                </span>
+
+                <span class="dato-valor">
+                    {{ articulo.fecha_publicacion }}
+                </span>
+
+            </div>
+
+            <div class="dato">
+
+                <span class="dato-titulo">
+                    Revista / Fuente
+                </span>
+
+                <span class="dato-valor">
+                    {{ articulo.revista }}
+                </span>
+
+            </div>
+
+            <div class="dato">
+
+                <span class="dato-titulo">
+                    Tipo
+                </span>
+
+                <span class="dato-valor">
+                    {{ articulo.tipo }}
+                </span>
+
+            </div>
+
+            <div class="dato">
+
+                <span class="dato-titulo">
+                    Idioma
+                </span>
+
+                <span class="dato-valor">
+                    {{ articulo.idioma }}
+                </span>
+
+            </div>
+
+            <div class="dato">
+
+                <span class="dato-titulo">
+                    Citas
+                </span>
+
+                <span class="dato-valor">
+                    {{ articulo.citas }}
+                </span>
+
+            </div>
+
+            {% if articulo.doi %}
+
+                <div class="dato">
+
+                    <span class="dato-titulo">
+                        DOI
+                    </span>
+
+                    <span class="dato-valor">
+                        {{ articulo.doi }}
+                    </span>
+
+                </div>
+
+            {% endif %}
+
+            <div class="dato">
+
+                <span class="dato-titulo">
+                    Acceso
+                </span>
+
+                <span class="dato-valor">
+
+                    {% if articulo.acceso_abierto %}
+
+                        <span class="oa">
+                            Acceso abierto
+                        </span>
+
+                    {% else %}
+
+                        <span class="cerrado">
+                            Acceso restringido
+                        </span>
+
+                    {% endif %}
+
+                </span>
+
             </div>
 
         </div>
 
         <div class="bloque">
 
-            <h2>Palabras clave</h2>
+            <h2>
+                Resumen / Abstract
+            </h2>
+
+            <div class="abstract">
+
+                {% if articulo.abstract %}
+
+                    {{ articulo.abstract }}
+
+                {% else %}
+
+                    Resumen no disponible.
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+        <div class="bloque">
+
+            <h2>
+                Palabras clave
+            </h2>
 
             <div class="etiquetas">
 
-                {% for palabra in articulo.palabras_clave.split(",") %}
+                {% if articulo.palabras_clave %}
+
+                    {% for palabra in articulo.palabras_clave.split(",") %}
+
+                        <span class="etiqueta">
+                            {{ palabra.strip() }}
+                        </span>
+
+                    {% endfor %}
+
+                {% else %}
 
                     <span class="etiqueta">
-                        {{ palabra.strip() }}
+                        No disponibles
                     </span>
 
-                {% endfor %}
+                {% endif %}
 
             </div>
 
@@ -215,17 +568,26 @@
 
         <div class="bloque">
 
-            <h2>Referencia bibliográfica preliminar</h2>
+            <h2>
+                Referencia bibliográfica preliminar
+            </h2>
 
             <div class="referencia">
 
                 {{ articulo.autores }}.
+
                 ({{ articulo.anio }}).
-                <em>{{ articulo.titulo }}</em>.
+
+                <em>
+                    {{ articulo.titulo }}
+                </em>.
+
                 {{ articulo.revista }}.
 
                 {% if articulo.doi %}
+
                     https://doi.org/{{ articulo.doi }}
+
                 {% endif %}
 
             </div>
@@ -235,37 +597,50 @@
         <div class="acciones">
 
             {% if articulo.url %}
+
                 <a
                     href="{{ articulo.url }}"
                     target="_blank"
+                    rel="noopener noreferrer"
                     class="boton"
                 >
                     Ver publicación original
                 </a>
+
             {% endif %}
 
             {% if articulo.doi %}
+
                 <a
                     href="https://doi.org/{{ articulo.doi }}"
                     target="_blank"
+                    rel="noopener noreferrer"
                     class="boton secundario"
                 >
                     Abrir DOI
                 </a>
+
             {% endif %}
 
             {% if articulo.url_open_access %}
+
                 <a
                     href="{{ articulo.url_open_access }}"
                     target="_blank"
+                    rel="noopener noreferrer"
                     class="boton secundario"
                 >
                     Acceso abierto
                 </a>
+
             {% endif %}
 
         </div>
 
+    </div>
+
+    <div class="pie">
+        IA Jhon · Sistema de búsqueda académica
     </div>
 
 </div>
