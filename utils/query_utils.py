@@ -75,8 +75,8 @@ def normalizar_consulta(texto):
 
 def obtener_traduccion_local(tema):
     """
-    Busca primero una traducción académica
-    conocida en el diccionario local.
+    Busca una traducción académica conocida
+    en el diccionario local.
     """
 
     consulta = normalizar_consulta(
@@ -207,14 +207,16 @@ def traducir_consulta_academica(tema):
     return tema
 
 
-def preparar_consultas_arxiv(tema):
+def preparar_consultas_academicas(tema):
     """
-    Devuelve las consultas útiles
-    para realizar búsquedas en arXiv.
+    Devuelve las consultas académicas útiles.
 
     Conserva siempre la consulta original
-    y agrega una traducción al inglés
-    cuando sea distinta.
+    y agrega una versión inglesa cuando
+    la traducción sea diferente.
+
+    Esta función puede utilizarse en
+    distintas fuentes académicas.
     """
 
     tema = (
@@ -243,3 +245,17 @@ def preparar_consultas_arxiv(tema):
         )
 
     return consultas
+
+
+def preparar_consultas_arxiv(tema):
+    """
+    Mantiene compatibilidad con el servicio
+    de arXiv.
+
+    Internamente utiliza la función genérica
+    de preparación de consultas académicas.
+    """
+
+    return preparar_consultas_academicas(
+        tema
+    )
