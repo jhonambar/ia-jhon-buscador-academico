@@ -15,6 +15,11 @@ from services.semantic_scholar import (
     obtener_trabajo_semantic_scholar
 )
 
+from services.arxiv_service import (
+    buscar_arxiv,
+    obtener_trabajo_arxiv
+)
+
 
 app = Flask(__name__)
 
@@ -224,12 +229,21 @@ def index():
                 )
             )
 
+            resultados_arxiv = buscar_arxiv(
+                tema=tema,
+                desde=desde,
+                hasta=hasta,
+                cantidad=cantidad
+            )
+
             resultados = (
                 resultados_openalex
                 +
                 resultados_crossref
                 +
                 resultados_semantic_scholar
+                +
+                resultados_arxiv
             )
 
             resultados = eliminar_duplicados(
@@ -391,6 +405,42 @@ def detalle_semantic_scholar():
                 "de unos minutos."
             )
         ), 429
+
+    if not articulo:
+
+        return (
+            "Publicación no encontrada",
+            404
+        )
+
+    return render_template(
+        "detalle.html",
+        articulo=articulo
+    )
+
+
+@app.route("/detalle/arxiv")
+def detalle_arxiv():
+    """
+    Muestra el detalle de una publicación
+    obtenida desde arXiv.
+    """
+
+    id_arxiv = request.args.get(
+        "id_arxiv",
+        ""
+    ).strip()
+
+    if not id_arxiv:
+
+        return (
+            "ID de arXiv no proporcionado",
+            400
+        )
+
+    articulo = obtener_trabajo_arxiv(
+        id_arxiv
+    )
 
     if not articulo:
 

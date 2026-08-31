@@ -688,8 +688,8 @@
                     Semantic Scholar ●
                 </span>
 
-                <span class="etiqueta">
-                    arXiv próximamente
+                <span class="etiqueta activa">
+                    arXiv ●
                 </span>
 
                 <span class="etiqueta">
@@ -801,16 +801,16 @@
 
                     <span class="dato">
 
-                        {% if r.fuente_busqueda == "Crossref" %}
-
-                            <span class="desconocido">
-                                Acceso no determinado
-                            </span>
-
-                        {% elif r.acceso_abierto %}
+                        {% if r.acceso_abierto %}
 
                             <span class="oa">
                                 Acceso abierto
+                            </span>
+
+                        {% elif r.fuente_busqueda in ["Crossref", "Semantic Scholar"] %}
+
+                            <span class="desconocido">
+                                Acceso no determinado
                             </span>
 
                         {% else %}
@@ -864,6 +864,15 @@
                         <a
                             class="boton"
                             href="{{ url_for('detalle_semantic_scholar', paper_id=r.id_semantic_scholar) }}"
+                        >
+                            Ver información completa
+                        </a>
+
+                    {% elif r.id_arxiv %}
+
+                        <a
+                            class="boton"
+                            href="{{ url_for('detalle_arxiv', id_arxiv=r.id_arxiv) }}"
                         >
                             Ver información completa
                         </a>
