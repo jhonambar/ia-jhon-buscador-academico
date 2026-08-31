@@ -3,6 +3,8 @@ import time
 import requests
 from urllib.parse import quote
 
+from utils.query_utils import traducir_consulta_academica
+
 
 URL_SEMANTIC_SCHOLAR = (
     "https://api.semanticscholar.org/graph/v1"
@@ -53,6 +55,41 @@ def obtener_headers():
     return headers
 
 
+def preparar_consulta_semantic_scholar(tema):
+    """
+    Prepara la consulta para Semantic Scholar.
+
+    Si existe una traducción académica
+    al inglés distinta de la consulta original,
+    utiliza la versión inglesa.
+
+    Esto evita realizar dos peticiones
+    y reduce el riesgo de alcanzar el límite 429.
+    """
+
+    tema = (
+        tema
+        or ""
+    ).strip()
+
+    if not tema:
+        return ""
+
+    traduccion = traducir_consulta_academica(
+        tema
+    )
+
+    traduccion = (
+        traduccion
+        or ""
+    ).strip()
+
+    if traduccion:
+        return traduccion
+
+    return tema
+
+
 def realizar_peticion(
     url,
     parametros=None,
@@ -72,7 +109,9 @@ def realizar_peticion(
 
     esperas = [1, 2, 4]
 
-    for intento in range(intentos):
+    for intento in range(
+        intentos
+    ):
 
         try:
 
@@ -113,13 +152,16 @@ def realizar_peticion(
                     f"Reintentando en {tiempo} segundos..."
                 )
 
-                time.sleep(tiempo)
+                time.sleep(
+                    tiempo
+                )
 
                 continue
 
             return "limite"
 
         try:
+
             respuesta.raise_for_status()
 
         except requests.RequestException as error:
@@ -137,10 +179,16 @@ def realizar_peticion(
 
 
 def obtener_autores(item):
+    """
+    Obtiene autores en formato legible.
+    """
 
     autores = []
 
-    for autor in item.get("authors") or []:
+    for autor in (
+        item.get("authors")
+        or []
+    ):
 
         nombre = (
             autor.get("name")
@@ -148,17 +196,27 @@ def obtener_autores(item):
         ).strip()
 
         if nombre:
-            autores.append(nombre)
+            autores.append(
+                nombre
+            )
 
     if autores:
-        return ", ".join(autores)
+        return ", ".join(
+            autores
+        )
 
     return "Autor no disponible"
 
 
 def obtener_revista(item):
+    """
+    Obtiene revista o fuente.
+    """
 
-    journal = item.get("journal") or {}
+    journal = (
+        item.get("journal")
+        or {}
+    )
 
     nombre_journal = (
         journal.get("name")
@@ -180,6 +238,9 @@ def obtener_revista(item):
 
 
 def obtener_doi(item):
+    """
+    Obtiene DOI si está disponible.
+    """
 
     external_ids = (
         item.get("externalIds")
@@ -191,10 +252,15 @@ def obtener_doi(item):
         or ""
     )
 
-    return str(doi).strip()
+    return str(
+        doi
+    ).strip()
 
 
 def obtener_tipo(item):
+    """
+    Obtiene el tipo de publicación.
+    """
 
     tipos = (
         item.get("publicationTypes")
@@ -213,6 +279,9 @@ def obtener_tipo(item):
 
 
 def obtener_palabras_clave(item):
+    """
+    Obtiene áreas de estudio.
+    """
 
     campos = (
         item.get("fieldsOfStudy")
@@ -231,6 +300,10 @@ def obtener_palabras_clave(item):
 
 
 def obtener_url_oa(item):
+    """
+    Obtiene URL de acceso abierto
+    cuando Semantic Scholar la proporciona.
+    """
 
     open_access_pdf = (
         item.get("openAccessPdf")
@@ -244,6 +317,10 @@ def obtener_url_oa(item):
 
 
 def convertir_item_semantic_scholar(item):
+    """
+    Convierte un registro de Semantic Scholar
+    al formato utilizado por IA Jhon.
+    """
 
     if not item:
         return None
@@ -263,9 +340,13 @@ def convertir_item_semantic_scholar(item):
         or "Resumen no disponible"
     )
 
-    url_oa = obtener_url_oa(item)
+    url_oa = obtener_url_oa(
+        item
+    )
 
-    acceso_abierto = bool(url_oa)
+    acceso_abierto = bool(
+        url_oa
+    )
 
     return {
         "id_semantic_scholar":
@@ -275,7 +356,9 @@ def convertir_item_semantic_scholar(item):
             titulo,
 
         "autores":
-            obtener_autores(item),
+            obtener_autores(
+                item
+            ),
 
         "instituciones":
             "Institución no disponible",
@@ -289,10 +372,14 @@ def convertir_item_semantic_scholar(item):
             or "",
 
         "revista":
-            obtener_revista(item),
+            obtener_revista(
+                item
+            ),
 
         "doi":
-            obtener_doi(item),
+            obtener_doi(
+                item
+            ),
 
         "url":
             item.get("url")
@@ -313,7 +400,9 @@ def convertir_item_semantic_scholar(item):
             "N/D",
 
         "tipo":
-            obtener_tipo(item),
+            obtener_tipo(
+                item
+            ),
 
         "acceso_abierto":
             acceso_abierto,
@@ -322,7 +411,9 @@ def convertir_item_semantic_scholar(item):
             abstract,
 
         "palabras_clave":
-            obtener_palabras_clave(item),
+            obtener_palabras_clave(
+                item
+            ),
 
         "fuente_busqueda":
             "Semantic Scholar"
@@ -335,6 +426,14 @@ def buscar_semantic_scholar(
     hasta=2026,
     cantidad=20
 ):
+    """
+    Busca publicaciones académicas
+    en Semantic Scholar.
+
+    Para consultas en español intenta utilizar
+    una traducción académica al inglés,
+    evitando duplicar peticiones.
+    """
 
     tema = (
         tema
@@ -346,9 +445,17 @@ def buscar_semantic_scholar(
 
     try:
 
-        desde = int(desde)
-        hasta = int(hasta)
-        cantidad = int(cantidad)
+        desde = int(
+            desde
+        )
+
+        hasta = int(
+            hasta
+        )
+
+        cantidad = int(
+            cantidad
+        )
 
     except (TypeError, ValueError):
 
@@ -360,20 +467,38 @@ def buscar_semantic_scholar(
         return []
 
     cantidad = min(
-        max(cantidad, 1),
+        max(
+            cantidad,
+            1
+        ),
         100
     )
 
+    consulta = preparar_consulta_semantic_scholar(
+        tema
+    )
+
+    if not consulta:
+        return []
+
     parametros = {
-        "query": tema,
-        "fields": CAMPOS,
-        "year": f"{desde}-{hasta}"
+        "query":
+            consulta,
+
+        "fields":
+            CAMPOS,
+
+        "year":
+            f"{desde}-{hasta}"
     }
 
     resultados = []
     token = None
 
-    while len(resultados) < cantidad:
+    while (
+        len(resultados)
+        < cantidad
+    ):
 
         parametros_pagina = (
             parametros.copy()
@@ -437,17 +562,26 @@ def buscar_semantic_scholar(
             ):
                 break
 
-        token = datos.get("token")
+        token = datos.get(
+            "token"
+        )
 
         if not token:
             break
 
-    return resultados[:cantidad]
+    return resultados[
+        :cantidad
+    ]
 
 
 def obtener_trabajo_semantic_scholar(
     paper_id
 ):
+    """
+    Obtiene una publicación específica
+    utilizando su identificador
+    de Semantic Scholar.
+    """
 
     paper_id = (
         paper_id
@@ -468,7 +602,8 @@ def obtener_trabajo_semantic_scholar(
     )
 
     parametros = {
-        "fields": CAMPOS
+        "fields":
+            CAMPOS
     }
 
     respuesta = realizar_peticion(
@@ -484,7 +619,6 @@ def obtener_trabajo_semantic_scholar(
         }
 
     if respuesta is None:
-
         return None
 
     try:
