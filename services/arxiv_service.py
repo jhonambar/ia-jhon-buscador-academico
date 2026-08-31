@@ -24,6 +24,48 @@ NS = {
 }
 
 
+PALABRAS_VACIAS_ARXIV = {
+    "a",
+    "an",
+    "and",
+    "are",
+    "as",
+    "at",
+    "be",
+    "by",
+    "for",
+    "from",
+    "in",
+    "into",
+    "is",
+    "means",
+    "of",
+    "on",
+    "or",
+    "the",
+    "to",
+    "using",
+    "via",
+    "with",
+
+    "al",
+    "con",
+    "de",
+    "del",
+    "el",
+    "en",
+    "la",
+    "las",
+    "los",
+    "mediante",
+    "para",
+    "por",
+    "un",
+    "una",
+    "y"
+}
+
+
 _bloqueo_peticion = threading.Lock()
 _ultima_peticion = 0.0
 
@@ -45,8 +87,8 @@ def limpiar_texto(texto):
 
 def limpiar_consulta_arxiv(texto):
     """
-    Prepara el texto para utilizarlo dentro
-    de una consulta de frase en arXiv.
+    Limpia una consulta antes de enviarla
+    a la API de arXiv.
     """
 
     texto = limpiar_texto(
@@ -65,6 +107,89 @@ def limpiar_consulta_arxiv(texto):
     )
 
     return texto.strip()
+
+
+def obtener_terminos_arxiv(texto):
+    """
+    Extrae los términos más importantes
+    de una consulta.
+
+    Elimina palabras vacías en español
+    e inglés para evitar consultas
+    excesivamente restrictivas.
+    """
+
+    texto = limpiar_consulta_arxiv(
+        texto
+    ).lower()
+
+    if not texto:
+        return []
+
+    palabras = re.findall(
+        r"[a-záéíóúüñ0-9]+",
+        texto,
+        flags=re.IGNORECASE
+    )
+
+    terminos = []
+
+    for palabra in palabras:
+
+        palabra = palabra.strip()
+
+        if len(palabra) < 2:
+            continue
+
+        if palabra in PALABRAS_VACIAS_ARXIV:
+            continue
+
+        if palabra not in terminos:
+            terminos.append(
+                palabra
+            )
+
+    return terminos
+
+
+def construir_consulta_arxiv(
+    texto,
+    inicio,
+    fin
+):
+    """
+    Construye una consulta flexible para arXiv.
+
+    En lugar de exigir que aparezca una frase
+    completa de forma exacta, busca los términos
+    académicos importantes mediante AND.
+    """
+
+    terminos = obtener_terminos_arxiv(
+        texto
+    )
+
+    if not terminos:
+        return ""
+
+    partes = []
+
+    for termino in terminos:
+        partes.append(
+            f"all:{termino}"
+        )
+
+    consulta_tema = (
+        " AND ".join(
+            partes
+        )
+    )
+
+    return (
+        f"({consulta_tema}) "
+        f"AND submittedDate:"
+        f"[{inicio} TO {fin}]"
+    )
 
 
 def esperar_turno_peticion():
@@ -465,16 +590,9 @@ def consultar_arxiv(
     cantidad
 ):
     """
-    Ejecuta una búsqueda individual en arXiv
-    y devuelve sus resultados normalizados.
+    Ejecuta una búsqueda individual
+    en arXiv.
     """
-
-    consulta_texto = limpiar_consulta_arxiv(
-        consulta_texto
-    )
-
-    if not consulta_texto:
-        return []
 
     inicio = (
         f"{desde}01010000"
@@ -484,11 +602,14 @@ def consultar_arxiv(
         f"{hasta}12312359"
     )
 
-    consulta = (
-        f'all:"{consulta_texto}" '
-        f'AND submittedDate:'
-        f'[{inicio} TO {fin}]'
+    consulta = construir_consulta_arxiv(
+        consulta_texto,
+        inicio,
+        fin
     )
+
+    if not consulta:
+        return []
 
     parametros = {
         "search_query":
@@ -557,13 +678,13 @@ def buscar_arxiv(
     """
     Busca publicaciones en arXiv.
 
-    Si existe un equivalente académico
-    en inglés para una consulta en español,
-    realiza ambas búsquedas.
+    Puede utilizar tanto la consulta
+    original como una traducción académica
+    al inglés.
 
-    Después combina los resultados y elimina
-    duplicados utilizando el identificador
-    de arXiv.
+    Los términos importantes se combinan
+    de forma flexible y posteriormente
+    se eliminan resultados duplicados.
     """
 
     tema = (
