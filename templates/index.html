@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
 
     <meta charset="UTF-8">
@@ -50,7 +51,7 @@
 
         .estado-sistema {
             font-size: 13px;
-            background: rgba(255,255,255,.12);
+            background: rgba(255, 255, 255, .12);
             padding: 7px 11px;
             border-radius: 999px;
         }
@@ -82,6 +83,7 @@
             background: white;
             border-radius: 20px;
             padding: 28px;
+
             box-shadow:
                 0 10px 35px rgba(15, 23, 42, .08);
 
@@ -245,7 +247,7 @@
             margin-bottom: 18px;
 
             box-shadow:
-                0 7px 25px rgba(15,23,42,.07);
+                0 7px 25px rgba(15, 23, 42, .07);
 
             border:
                 1px solid #eef2f7;
@@ -253,7 +255,7 @@
 
         .resultado:hover {
             box-shadow:
-                0 10px 30px rgba(15,23,42,.11);
+                0 10px 30px rgba(15, 23, 42, .11);
         }
 
         .resultado-superior {
@@ -327,6 +329,11 @@
 
         .cerrado {
             color: #b91c1c;
+            font-weight: bold;
+        }
+
+        .desconocido {
+            color: #92400e;
             font-weight: bold;
         }
 
@@ -591,6 +598,72 @@
 
                 </div>
 
+                <div class="campo">
+
+                    <label>
+                        Resultados por fuente
+                    </label>
+
+                    <select name="cantidad">
+
+                        <option
+                            value="5"
+                            {% if cantidad == 5 %}
+                                selected
+                            {% endif %}
+                        >
+                            5
+                        </option>
+
+                        <option
+                            value="10"
+                            {% if cantidad == 10 %}
+                                selected
+                            {% endif %}
+                        >
+                            10
+                        </option>
+
+                        <option
+                            value="20"
+                            {% if cantidad == 20 %}
+                                selected
+                            {% endif %}
+                        >
+                            20
+                        </option>
+
+                        <option
+                            value="30"
+                            {% if cantidad == 30 %}
+                                selected
+                            {% endif %}
+                        >
+                            30
+                        </option>
+
+                        <option
+                            value="50"
+                            {% if cantidad == 50 %}
+                                selected
+                            {% endif %}
+                        >
+                            50
+                        </option>
+
+                        <option
+                            value="100"
+                            {% if cantidad == 100 %}
+                                selected
+                            {% endif %}
+                        >
+                            100
+                        </option>
+
+                    </select>
+
+                </div>
+
             </div>
 
         </form>
@@ -598,7 +671,7 @@
         <div class="fuentes">
 
             <div class="fuentes-titulo">
-                Fuentes académicas
+                Fuentes académicas activas
             </div>
 
             <div class="etiquetas">
@@ -607,8 +680,8 @@
                     OpenAlex ●
                 </span>
 
-                <span class="etiqueta">
-                    Crossref próximamente
+                <span class="etiqueta activa">
+                    Crossref ●
                 </span>
 
                 <span class="etiqueta">
@@ -642,17 +715,24 @@
         <div class="cabecera-resultados">
 
             <div class="resumen-resultados">
+
                 {{ resultados|length }}
                 publicaciones encontradas
+
             </div>
 
             {% if tema %}
 
                 <div class="consulta">
+
                     Consulta:
+
                     <strong>
                         {{ tema }}
                     </strong>
+
+                    · {{ cantidad }} por fuente
+
                 </div>
 
             {% endif %}
@@ -721,7 +801,13 @@
 
                     <span class="dato">
 
-                        {% if r.acceso_abierto %}
+                        {% if r.fuente_busqueda == "Crossref" %}
+
+                            <span class="desconocido">
+                                Acceso no determinado
+                            </span>
+
+                        {% elif r.acceso_abierto %}
 
                             <span class="oa">
                                 Acceso abierto
@@ -759,10 +845,16 @@
 
                         <a
                             class="boton"
-                            href="{{ url_for(
-                                'detalle',
-                                id_openalex=r.id_openalex.split('/')[-1]
-                            ) }}"
+                            href="{{ url_for('detalle', id_openalex=r.id_openalex.split('/')[-1]) }}"
+                        >
+                            Ver información completa
+                        </a>
+
+                    {% elif r.id_crossref %}
+
+                        <a
+                            class="boton"
+                            href="{{ url_for('detalle_crossref', doi=r.doi) }}"
                         >
                             Ver información completa
                         </a>
@@ -818,4 +910,5 @@
 </div>
 
 </body>
+
 </html>
