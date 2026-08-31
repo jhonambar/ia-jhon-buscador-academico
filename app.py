@@ -24,6 +24,10 @@ from services.arxiv_service import (
     obtener_trabajo_arxiv
 )
 
+from utils.query_utils import (
+    preparar_consultas_academicas
+)
+
 
 app = Flask(__name__)
 
@@ -66,7 +70,9 @@ def normalizar_texto(texto):
     texto = "".join(
         caracter
         for caracter in texto
-        if not unicodedata.combining(caracter)
+        if not unicodedata.combining(
+            caracter
+        )
     )
 
     texto = re.sub(
@@ -87,7 +93,7 @@ def normalizar_texto(texto):
 def obtener_terminos_busqueda(tema):
     """
     Obtiene las palabras importantes
-    de la consulta del usuario.
+    de una consulta.
     """
 
     tema_normalizado = normalizar_texto(
@@ -109,17 +115,106 @@ def obtener_terminos_busqueda(tema):
     ]
 
     if not terminos:
+
         terminos = [
             palabra
             for palabra in palabras
             if len(palabra) >= 2
         ]
 
-    # Elimina términos repetidos
-    # conservando el orden original.
     return list(
-        dict.fromkeys(terminos)
+        dict.fromkeys(
+            terminos
+        )
     )
+
+
+def preparar_consultas_relevancia(tema):
+    """
+    Prepara las consultas que se utilizarán
+    para calcular la relevancia global.
+
+    Normalmente incluye:
+    - Consulta original.
+    - Traducción académica al inglés.
+
+    Si la traducción no está disponible,
+    se utiliza únicamente la consulta original.
+    """
+
+    tema = (
+        tema
+        or ""
+    ).strip()
+
+    if not tema:
+        return []
+
+    try:
+
+        consultas = (
+            preparar_consultas_academicas(
+                tema
+            )
+        )
+
+    except Exception as error:
+
+        print(
+            "[Relevancia] "
+            "No se pudo preparar la traducción: "
+            f"{error}"
+        )
+
+        consultas = [
+            tema
+        ]
+
+    consultas_limpias = []
+
+    consultas_vistas = set()
+
+    for consulta in (
+        consultas
+        or []
+    ):
+
+        consulta = (
+            consulta
+            or ""
+        ).strip()
+
+        if not consulta:
+            continue
+
+        consulta_normalizada = (
+            normalizar_texto(
+                consulta
+            )
+        )
+
+        if (
+            not consulta_normalizada
+            or consulta_normalizada
+            in consultas_vistas
+        ):
+            continue
+
+        consultas_vistas.add(
+            consulta_normalizada
+        )
+
+        consultas_limpias.append(
+            consulta
+        )
+
+    if not consultas_limpias:
+
+        consultas_limpias.append(
+            tema
+        )
+
+    return consultas_limpias
 
 
 def limpiar_doi(doi):
@@ -130,7 +225,9 @@ def limpiar_doi(doi):
     if not doi:
         return ""
 
-    doi = str(doi).strip().lower()
+    doi = str(
+        doi
+    ).strip().lower()
 
     doi = re.sub(
         r"^https?://(?:dx\.)?doi\.org/",
@@ -159,17 +256,22 @@ def eliminar_duplicados(resultados):
     """
 
     unicos = []
+
     dois_vistos = set()
     titulos_vistos = set()
 
     for resultado in resultados:
 
         doi = limpiar_doi(
-            resultado.get("doi")
+            resultado.get(
+                "doi"
+            )
         )
 
         titulo = normalizar_texto(
-            resultado.get("titulo")
+            resultado.get(
+                "titulo"
+            )
         )
 
         if doi:
@@ -177,48 +279,59 @@ def eliminar_duplicados(resultados):
             if doi in dois_vistos:
                 continue
 
-            dois_vistos.add(doi)
+            dois_vistos.add(
+                doi
+            )
 
         else:
 
             if (
                 titulo
-                and titulo in titulos_vistos
+                and titulo
+                in titulos_vistos
             ):
                 continue
 
         if titulo:
-            titulos_vistos.add(titulo)
 
-        unicos.append(resultado)
+            titulos_vistos.add(
+                titulo
+            )
+
+        unicos.append(
+            resultado
+        )
 
     return unicos
 
 
 def asignar_ranking_fuente(resultados):
     """
-    Guarda temporalmente la posición en la que
-    cada API entregó un resultado.
+    Guarda temporalmente la posición
+    en la que cada API entregó un resultado.
 
-    Las cuatro fuentes ya poseen sus propios
-    mecanismos de relevancia. Esta posición
-    funciona como una señal adicional, pero
-    no decide por sí sola el orden final.
+    La posición de la fuente funciona
+    como señal secundaria de relevancia.
     """
 
     for posicion, resultado in enumerate(
         resultados,
         start=1
     ):
-        resultado["_ranking_fuente"] = posicion
+
+        resultado[
+            "_ranking_fuente"
+        ] = posicion
 
     return resultados
 
 
 def obtener_anio_seguro(resultado):
     """
-    Devuelve el año como número entero.
-    Si no existe, devuelve 0.
+    Devuelve el año como entero.
+
+    Si no existe o es inválido,
+    devuelve 0.
     """
 
     try:
@@ -243,8 +356,9 @@ def obtener_citas_seguras(resultado):
     """
     Devuelve el número de citas.
 
-    Si la fuente no proporciona este dato,
-    devuelve 0 solo para efectos de ordenamiento.
+    Si la fuente no proporciona
+    este dato, devuelve 0 solamente
+    para efectos de ordenamiento.
     """
 
     citas = resultado.get(
@@ -267,27 +381,25 @@ def obtener_citas_seguras(resultado):
         return 0
 
 
-def calcular_relevancia(
+def calcular_relevancia_consulta(
     resultado,
-    tema
+    consulta
 ):
     """
-    Calcula un puntaje común de relevancia
-    para resultados provenientes de distintas
-    fuentes académicas.
+    Calcula relevancia utilizando
+    una sola versión de la consulta.
 
-    El título recibe el mayor peso.
-    Después se consideran palabras clave,
-    abstract, cobertura de la consulta,
-    posición dentro de la fuente y citas.
+    Esta función se utiliza tanto
+    para la consulta original como
+    para su traducción.
     """
 
     frase = normalizar_texto(
-        tema
+        consulta
     )
 
     terminos = obtener_terminos_busqueda(
-        tema
+        consulta
     )
 
     titulo = normalizar_texto(
@@ -332,15 +444,19 @@ def calcular_relevancia(
     if frase:
 
         if frase == titulo:
+
             puntaje += 180
 
         elif frase in titulo:
+
             puntaje += 130
 
         if frase in palabras_clave:
+
             puntaje += 70
 
         if frase in abstract:
+
             puntaje += 45
 
     # -------------------------------------------------
@@ -355,19 +471,27 @@ def calcular_relevancia(
         aparece = False
 
         if termino in titulo_tokens:
+
             puntaje += 28
+
             coincidencias_titulo += 1
+
             aparece = True
 
         if termino in palabras_clave_tokens:
+
             puntaje += 16
+
             aparece = True
 
         if termino in abstract_tokens:
+
             puntaje += 6
+
             aparece = True
 
         if aparece:
+
             coincidencias_globales += 1
 
     # -------------------------------------------------
@@ -378,26 +502,40 @@ def calcular_relevancia(
 
         cobertura = (
             coincidencias_globales
-            / len(terminos)
+            / len(
+                terminos
+            )
         )
 
-        puntaje += cobertura * 55
+        puntaje += (
+            cobertura
+            * 55
+        )
 
-        if coincidencias_globales == len(
-            terminos
+        if (
+            coincidencias_globales
+            == len(
+                terminos
+            )
         ):
+
             puntaje += 35
 
-        if coincidencias_titulo == len(
-            terminos
+        if (
+            coincidencias_titulo
+            == len(
+                terminos
+            )
         ):
+
             puntaje += 45
 
     # -------------------------------------------------
-    # 4. POSICIÓN ORIGINAL DENTRO DE LA FUENTE
+    # 4. POSICIÓN ORIGINAL DE LA FUENTE
     # -------------------------------------------------
 
     try:
+
         ranking_fuente = int(
             resultado.get(
                 "_ranking_fuente",
@@ -409,12 +547,14 @@ def calcular_relevancia(
         TypeError,
         ValueError
     ):
+
         ranking_fuente = 100
 
     if ranking_fuente <= 20:
 
         puntaje += (
-            21 - ranking_fuente
+            21
+            - ranking_fuente
         ) * 1.25
 
     # -------------------------------------------------
@@ -428,12 +568,73 @@ def calcular_relevancia(
     if citas > 0:
 
         puntaje += min(
-            math.log1p(citas) * 2,
+            math.log1p(
+                citas
+            ) * 2,
             15
         )
 
+    return puntaje
+
+
+def calcular_relevancia(
+    resultado,
+    consultas
+):
+    """
+    Calcula relevancia bilingüe.
+
+    Evalúa el resultado contra todas
+    las versiones disponibles de la consulta
+    y conserva el puntaje más alto.
+
+    De esta forma:
+    - Un artículo en español puede ser evaluado
+      con la consulta original.
+    - Un artículo en inglés puede ser evaluado
+      con la traducción.
+    - No se suman ambos puntajes, evitando
+      inflar artificialmente la relevancia.
+    """
+
+    if isinstance(
+        consultas,
+        str
+    ):
+
+        consultas = [
+            consultas
+        ]
+
+    puntajes = []
+
+    for consulta in (
+        consultas
+        or []
+    ):
+
+        if not consulta:
+            continue
+
+        puntaje = (
+            calcular_relevancia_consulta(
+                resultado,
+                consulta
+            )
+        )
+
+        puntajes.append(
+            puntaje
+        )
+
+    if not puntajes:
+
+        return 0.0
+
     return round(
-        puntaje,
+        max(
+            puntajes
+        ),
         4
     )
 
@@ -446,7 +647,17 @@ def ordenar_resultados(
     """
     Ordena las publicaciones según
     la opción seleccionada.
+
+    Para relevancia utiliza tanto
+    la consulta original como
+    su traducción académica.
     """
+
+    consultas_relevancia = (
+        preparar_consultas_relevancia(
+            tema
+        )
+    )
 
     for resultado in resultados:
 
@@ -454,7 +665,7 @@ def ordenar_resultados(
             "_puntaje_relevancia"
         ] = calcular_relevancia(
             resultado,
-            tema
+            consultas_relevancia
         )
 
     if orden == "recientes":
@@ -465,9 +676,11 @@ def ordenar_resultados(
                 obtener_anio_seguro(
                     resultado
                 ) > 0,
+
                 obtener_anio_seguro(
                     resultado
                 ),
+
                 resultado.get(
                     "_puntaje_relevancia",
                     0
@@ -484,6 +697,7 @@ def ordenar_resultados(
                 obtener_anio_seguro(
                     resultado
                 ) == 0,
+
                 obtener_anio_seguro(
                     resultado
                 )
@@ -491,6 +705,7 @@ def ordenar_resultados(
                     resultado
                 ) > 0
                 else 9999,
+
                 -resultado.get(
                     "_puntaje_relevancia",
                     0
@@ -506,6 +721,7 @@ def ordenar_resultados(
                 obtener_citas_seguras(
                     resultado
                 ),
+
                 resultado.get(
                     "_puntaje_relevancia",
                     0
@@ -514,7 +730,10 @@ def ordenar_resultados(
             reverse=True
         )
 
-    # Relevancia global entre todas las fuentes.
+    # -------------------------------------------------
+    # RELEVANCIA GLOBAL
+    # -------------------------------------------------
+
     return sorted(
         resultados,
         key=lambda resultado: (
@@ -522,9 +741,11 @@ def ordenar_resultados(
                 "_puntaje_relevancia",
                 0
             ),
+
             obtener_citas_seguras(
                 resultado
             ),
+
             obtener_anio_seguro(
                 resultado
             )
@@ -533,19 +754,30 @@ def ordenar_resultados(
     )
 
 
-@app.route("/", methods=["GET", "POST"])
+@app.route(
+    "/",
+    methods=[
+        "GET",
+        "POST"
+    ]
+)
 def index():
 
     resultados = []
+
     mensaje = ""
+
     busqueda_realizada = False
 
     tema = ""
     desde = 2020
     hasta = 2026
+
     tipo = "todos"
     idioma = "todos"
+
     cantidad = 20
+
     orden = "relevancia"
 
     if request.method == "POST":
@@ -756,7 +988,9 @@ def index():
     )
 
 
-@app.route("/detalle/<id_openalex>")
+@app.route(
+    "/detalle/<id_openalex>"
+)
 def detalle(id_openalex):
     """
     Muestra el detalle de una publicación
@@ -780,7 +1014,9 @@ def detalle(id_openalex):
     )
 
 
-@app.route("/detalle/crossref")
+@app.route(
+    "/detalle/crossref"
+)
 def detalle_crossref():
     """
     Muestra el detalle de una publicación
@@ -816,7 +1052,9 @@ def detalle_crossref():
     )
 
 
-@app.route("/detalle/semantic-scholar")
+@app.route(
+    "/detalle/semantic-scholar"
+)
 def detalle_semantic_scholar():
     """
     Muestra el detalle de una publicación
@@ -836,22 +1074,28 @@ def detalle_semantic_scholar():
             400
         )
 
-    articulo = obtener_trabajo_semantic_scholar(
-        paper_id
+    articulo = (
+        obtener_trabajo_semantic_scholar(
+            paper_id
+        )
     )
 
     if (
         articulo
-        and articulo.get("_estado")
+        and articulo.get(
+            "_estado"
+        )
         == "limite_api"
     ):
 
         return render_template(
             "error_api.html",
+
             titulo=(
                 "Semantic Scholar "
                 "temporalmente limitado"
             ),
+
             mensaje=(
                 "Semantic Scholar alcanzó "
                 "temporalmente su límite de "
@@ -876,7 +1120,9 @@ def detalle_semantic_scholar():
     )
 
 
-@app.route("/detalle/arxiv")
+@app.route(
+    "/detalle/arxiv"
+)
 def detalle_arxiv():
     """
     Muestra el detalle de una publicación
