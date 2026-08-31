@@ -118,6 +118,97 @@ def eliminar_duplicados(resultados):
     return unicos
 
 
+def obtener_anio_seguro(resultado):
+    """
+    Devuelve el año como número entero.
+    Si no existe, devuelve 0.
+    """
+
+    try:
+
+        return int(
+            resultado.get(
+                "anio",
+                0
+            )
+            or 0
+        )
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
+        return 0
+
+
+def obtener_citas_seguras(resultado):
+    """
+    Devuelve el número de citas.
+
+    Si la fuente no proporciona
+    este dato, devuelve 0 solamente
+    para efectos de ordenamiento.
+    """
+
+    citas = resultado.get(
+        "citas",
+        0
+    )
+
+    try:
+
+        return int(
+            citas
+            or 0
+        )
+
+    except (
+        TypeError,
+        ValueError
+    ):
+
+        return 0
+
+
+def ordenar_resultados(
+    resultados,
+    orden
+):
+    """
+    Ordena publicaciones según
+    la opción seleccionada.
+    """
+
+    if orden == "recientes":
+
+        return sorted(
+            resultados,
+            key=obtener_anio_seguro,
+            reverse=True
+        )
+
+    if orden == "antiguos":
+
+        return sorted(
+            resultados,
+            key=obtener_anio_seguro
+        )
+
+    if orden == "citados":
+
+        return sorted(
+            resultados,
+            key=obtener_citas_seguras,
+            reverse=True
+        )
+
+    # Relevancia:
+    # se conserva el orden original
+    # entregado por las fuentes.
+    return resultados
+
+
 @app.route("/", methods=["GET", "POST"])
 def index():
 
@@ -131,6 +222,7 @@ def index():
     tipo = "todos"
     idioma = "todos"
     cantidad = 20
+    orden = "relevancia"
 
     if request.method == "POST":
 
@@ -157,7 +249,10 @@ def index():
                 )
             )
 
-        except (TypeError, ValueError):
+        except (
+            TypeError,
+            ValueError
+        ):
 
             desde = 2020
             hasta = 2026
@@ -172,6 +267,11 @@ def index():
             "todos"
         )
 
+        orden = request.form.get(
+            "orden",
+            "relevancia"
+        )
+
         try:
 
             cantidad = int(
@@ -181,14 +281,29 @@ def index():
                 )
             )
 
-        except (TypeError, ValueError):
+        except (
+            TypeError,
+            ValueError
+        ):
 
             cantidad = 20
 
         cantidad = min(
-            max(cantidad, 1),
+            max(
+                cantidad,
+                1
+            ),
             100
         )
+
+        if orden not in {
+            "relevancia",
+            "recientes",
+            "antiguos",
+            "citados"
+        }:
+
+            orden = "relevancia"
 
         if not tema:
 
@@ -278,6 +393,11 @@ def index():
                     ).lower()
                 ]
 
+            resultados = ordenar_resultados(
+                resultados,
+                orden
+            )
+
             if not resultados:
 
                 mensaje = (
@@ -295,7 +415,8 @@ def index():
         hasta=hasta,
         tipo=tipo,
         idioma=idioma,
-        cantidad=cantidad
+        cantidad=cantidad,
+        orden=orden
     )
 
 

@@ -137,7 +137,7 @@
             grid-template-columns:
                 repeat(
                     auto-fit,
-                    minmax(190px, 1fr)
+                    minmax(170px, 1fr)
                 );
 
             gap: 15px;
@@ -555,6 +555,15 @@
                             Tesis
                         </option>
 
+                        <option
+                            value="preprint"
+                            {% if tipo == "preprint" %}
+                                selected
+                            {% endif %}
+                        >
+                            Preprint
+                        </option>
+
                     </select>
 
                 </div>
@@ -664,6 +673,54 @@
 
                 </div>
 
+                <div class="campo">
+
+                    <label>
+                        Ordenar por
+                    </label>
+
+                    <select name="orden">
+
+                        <option
+                            value="relevancia"
+                            {% if orden == "relevancia" %}
+                                selected
+                            {% endif %}
+                        >
+                            Relevancia
+                        </option>
+
+                        <option
+                            value="recientes"
+                            {% if orden == "recientes" %}
+                                selected
+                            {% endif %}
+                        >
+                            Más recientes
+                        </option>
+
+                        <option
+                            value="antiguos"
+                            {% if orden == "antiguos" %}
+                                selected
+                            {% endif %}
+                        >
+                            Más antiguos
+                        </option>
+
+                        <option
+                            value="citados"
+                            {% if orden == "citados" %}
+                                selected
+                            {% endif %}
+                        >
+                            Más citados
+                        </option>
+
+                    </select>
+
+                </div>
+
             </div>
 
         </form>
@@ -732,6 +789,16 @@
                     </strong>
 
                     · {{ cantidad }} por fuente
+
+                    {% if orden == "recientes" %}
+                        · Más recientes
+                    {% elif orden == "antiguos" %}
+                        · Más antiguos
+                    {% elif orden == "citados" %}
+                        · Más citados
+                    {% else %}
+                        · Relevancia
+                    {% endif %}
 
                 </div>
 
