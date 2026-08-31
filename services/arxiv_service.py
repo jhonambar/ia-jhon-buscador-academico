@@ -4,6 +4,8 @@ import threading
 import requests
 import xml.etree.ElementTree as ET
 
+from utils.query_utils import preparar_consultas_arxiv
+
 
 URL_ARXIV = "https://export.arxiv.org/api/query"
 
@@ -39,6 +41,30 @@ def limpiar_texto(texto):
         " ",
         texto
     ).strip()
+
+
+def limpiar_consulta_arxiv(texto):
+    """
+    Prepara el texto para utilizarlo dentro
+    de una consulta de frase en arXiv.
+    """
+
+    texto = limpiar_texto(
+        texto
+    )
+
+    texto = texto.replace(
+        '"',
+        " "
+    )
+
+    texto = re.sub(
+        r"\s+",
+        " ",
+        texto
+    )
+
+    return texto.strip()
 
 
 def esperar_turno_peticion():
@@ -432,43 +458,23 @@ def convertir_entry(entry):
     }
 
 
-def buscar_arxiv(
-    tema,
-    desde=2020,
-    hasta=2026,
-    cantidad=20
+def consultar_arxiv(
+    consulta_texto,
+    desde,
+    hasta,
+    cantidad
 ):
     """
-    Busca publicaciones en arXiv.
+    Ejecuta una búsqueda individual en arXiv
+    y devuelve sus resultados normalizados.
     """
 
-    tema = (
-        tema
-        or ""
-    ).strip()
-
-    if not tema:
-        return []
-
-    try:
-
-        desde = int(desde)
-        hasta = int(hasta)
-        cantidad = int(cantidad)
-
-    except (TypeError, ValueError):
-
-        desde = 2020
-        hasta = 2026
-        cantidad = 20
-
-    if desde > hasta:
-        return []
-
-    cantidad = min(
-        max(cantidad, 1),
-        100
+    consulta_texto = limpiar_consulta_arxiv(
+        consulta_texto
     )
+
+    if not consulta_texto:
+        return []
 
     inicio = (
         f"{desde}01010000"
@@ -479,7 +485,7 @@ def buscar_arxiv(
     )
 
     consulta = (
-        f'all:"{tema}" '
+        f'all:"{consulta_texto}" '
         f'AND submittedDate:'
         f'[{inicio} TO {fin}]'
     )
@@ -534,11 +540,107 @@ def buscar_arxiv(
             entry
         )
 
-        resultados.append(
-            resultado
-        )
+        if resultado:
+            resultados.append(
+                resultado
+            )
 
     return resultados
+
+
+def buscar_arxiv(
+    tema,
+    desde=2020,
+    hasta=2026,
+    cantidad=20
+):
+    """
+    Busca publicaciones en arXiv.
+
+    Si existe un equivalente académico
+    en inglés para una consulta en español,
+    realiza ambas búsquedas.
+
+    Después combina los resultados y elimina
+    duplicados utilizando el identificador
+    de arXiv.
+    """
+
+    tema = (
+        tema
+        or ""
+    ).strip()
+
+    if not tema:
+        return []
+
+    try:
+
+        desde = int(desde)
+        hasta = int(hasta)
+        cantidad = int(cantidad)
+
+    except (TypeError, ValueError):
+
+        desde = 2020
+        hasta = 2026
+        cantidad = 20
+
+    if desde > hasta:
+        return []
+
+    cantidad = min(
+        max(cantidad, 1),
+        100
+    )
+
+    consultas = preparar_consultas_arxiv(
+        tema
+    )
+
+    if not consultas:
+        return []
+
+    resultados_finales = []
+    ids_vistos = set()
+
+    for consulta in consultas:
+
+        resultados_consulta = consultar_arxiv(
+            consulta_texto=consulta,
+            desde=desde,
+            hasta=hasta,
+            cantidad=cantidad
+        )
+
+        for resultado in resultados_consulta:
+
+            id_arxiv = (
+                resultado.get(
+                    "id_arxiv",
+                    ""
+                )
+                or ""
+            ).strip()
+
+            if (
+                id_arxiv
+                and id_arxiv in ids_vistos
+            ):
+                continue
+
+            if id_arxiv:
+                ids_vistos.add(
+                    id_arxiv
+                )
+
+            resultados_finales.append(
+                resultado
+            )
+
+    return resultados_finales[
+        :cantidad
+    ]
 
 
 def obtener_trabajo_arxiv(
