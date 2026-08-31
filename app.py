@@ -1,3 +1,7 @@
+import math
+import re
+import unicodedata
+
 from flask import Flask, render_template, request
 
 from services.openalex import (
@@ -24,23 +28,97 @@ from services.arxiv_service import (
 app = Flask(__name__)
 
 
+PALABRAS_VACIAS = {
+    # Español
+    "a", "al", "algo", "como", "con", "de", "del", "desde",
+    "el", "ella", "en", "entre", "es", "esta", "este", "estos",
+    "estas", "la", "las", "lo", "los", "para", "por", "que",
+    "se", "sin", "sobre", "su", "sus", "un", "una", "uno",
+    "unos", "unas", "y", "o",
+
+    # Inglés
+    "a", "an", "and", "are", "as", "at", "be", "by", "for",
+    "from", "in", "is", "of", "on", "or", "that", "the",
+    "this", "to", "with"
+}
+
+
 def normalizar_texto(texto):
     """
-    Normaliza texto para comparar títulos.
+    Normaliza texto para comparaciones.
+
+    - Convierte a minúsculas.
+    - Elimina acentos.
+    - Sustituye signos por espacios.
+    - Elimina espacios repetidos.
     """
 
     if not texto:
         return ""
 
-    return (
-        str(texto)
-        .strip()
-        .lower()
-        .replace(".", "")
-        .replace(",", "")
-        .replace(":", "")
-        .replace(";", "")
-        .replace("-", " ")
+    texto = str(texto).strip().lower()
+
+    texto = unicodedata.normalize(
+        "NFKD",
+        texto
+    )
+
+    texto = "".join(
+        caracter
+        for caracter in texto
+        if not unicodedata.combining(caracter)
+    )
+
+    texto = re.sub(
+        r"[^a-z0-9]+",
+        " ",
+        texto
+    )
+
+    texto = re.sub(
+        r"\s+",
+        " ",
+        texto
+    )
+
+    return texto.strip()
+
+
+def obtener_terminos_busqueda(tema):
+    """
+    Obtiene las palabras importantes
+    de la consulta del usuario.
+    """
+
+    tema_normalizado = normalizar_texto(
+        tema
+    )
+
+    palabras = re.findall(
+        r"[a-z0-9]+",
+        tema_normalizado
+    )
+
+    terminos = [
+        palabra
+        for palabra in palabras
+        if (
+            len(palabra) >= 2
+            and palabra not in PALABRAS_VACIAS
+        )
+    ]
+
+    if not terminos:
+        terminos = [
+            palabra
+            for palabra in palabras
+            if len(palabra) >= 2
+        ]
+
+    # Elimina términos repetidos
+    # conservando el orden original.
+    return list(
+        dict.fromkeys(terminos)
     )
 
 
@@ -54,19 +132,18 @@ def limpiar_doi(doi):
 
     doi = str(doi).strip().lower()
 
-    doi = doi.replace(
-        "https://doi.org/",
-        ""
+    doi = re.sub(
+        r"^https?://(?:dx\.)?doi\.org/",
+        "",
+        doi,
+        flags=re.IGNORECASE
     )
 
-    doi = doi.replace(
-        "http://doi.org/",
-        ""
-    )
-
-    doi = doi.replace(
-        "doi:",
-        ""
+    doi = re.sub(
+        r"^doi:\s*",
+        "",
+        doi,
+        flags=re.IGNORECASE
     )
 
     return doi.strip()
@@ -118,6 +195,26 @@ def eliminar_duplicados(resultados):
     return unicos
 
 
+def asignar_ranking_fuente(resultados):
+    """
+    Guarda temporalmente la posición en la que
+    cada API entregó un resultado.
+
+    Las cuatro fuentes ya poseen sus propios
+    mecanismos de relevancia. Esta posición
+    funciona como una señal adicional, pero
+    no decide por sí sola el orden final.
+    """
+
+    for posicion, resultado in enumerate(
+        resultados,
+        start=1
+    ):
+        resultado["_ranking_fuente"] = posicion
+
+    return resultados
+
+
 def obtener_anio_seguro(resultado):
     """
     Devuelve el año como número entero.
@@ -146,9 +243,8 @@ def obtener_citas_seguras(resultado):
     """
     Devuelve el número de citas.
 
-    Si la fuente no proporciona
-    este dato, devuelve 0 solamente
-    para efectos de ordenamiento.
+    Si la fuente no proporciona este dato,
+    devuelve 0 solo para efectos de ordenamiento.
     """
 
     citas = resultado.get(
@@ -171,20 +267,212 @@ def obtener_citas_seguras(resultado):
         return 0
 
 
-def ordenar_resultados(
-    resultados,
-    orden
+def calcular_relevancia(
+    resultado,
+    tema
 ):
     """
-    Ordena publicaciones según
+    Calcula un puntaje común de relevancia
+    para resultados provenientes de distintas
+    fuentes académicas.
+
+    El título recibe el mayor peso.
+    Después se consideran palabras clave,
+    abstract, cobertura de la consulta,
+    posición dentro de la fuente y citas.
+    """
+
+    frase = normalizar_texto(
+        tema
+    )
+
+    terminos = obtener_terminos_busqueda(
+        tema
+    )
+
+    titulo = normalizar_texto(
+        resultado.get(
+            "titulo",
+            ""
+        )
+    )
+
+    palabras_clave = normalizar_texto(
+        resultado.get(
+            "palabras_clave",
+            ""
+        )
+    )
+
+    abstract = normalizar_texto(
+        resultado.get(
+            "abstract",
+            ""
+        )
+    )
+
+    titulo_tokens = set(
+        titulo.split()
+    )
+
+    palabras_clave_tokens = set(
+        palabras_clave.split()
+    )
+
+    abstract_tokens = set(
+        abstract.split()
+    )
+
+    puntaje = 0.0
+
+    # -------------------------------------------------
+    # 1. FRASE COMPLETA
+    # -------------------------------------------------
+
+    if frase:
+
+        if frase == titulo:
+            puntaje += 180
+
+        elif frase in titulo:
+            puntaje += 130
+
+        if frase in palabras_clave:
+            puntaje += 70
+
+        if frase in abstract:
+            puntaje += 45
+
+    # -------------------------------------------------
+    # 2. PALABRAS INDIVIDUALES
+    # -------------------------------------------------
+
+    coincidencias_globales = 0
+    coincidencias_titulo = 0
+
+    for termino in terminos:
+
+        aparece = False
+
+        if termino in titulo_tokens:
+            puntaje += 28
+            coincidencias_titulo += 1
+            aparece = True
+
+        if termino in palabras_clave_tokens:
+            puntaje += 16
+            aparece = True
+
+        if termino in abstract_tokens:
+            puntaje += 6
+            aparece = True
+
+        if aparece:
+            coincidencias_globales += 1
+
+    # -------------------------------------------------
+    # 3. COBERTURA DE LA CONSULTA
+    # -------------------------------------------------
+
+    if terminos:
+
+        cobertura = (
+            coincidencias_globales
+            / len(terminos)
+        )
+
+        puntaje += cobertura * 55
+
+        if coincidencias_globales == len(
+            terminos
+        ):
+            puntaje += 35
+
+        if coincidencias_titulo == len(
+            terminos
+        ):
+            puntaje += 45
+
+    # -------------------------------------------------
+    # 4. POSICIÓN ORIGINAL DENTRO DE LA FUENTE
+    # -------------------------------------------------
+
+    try:
+        ranking_fuente = int(
+            resultado.get(
+                "_ranking_fuente",
+                100
+            )
+        )
+
+    except (
+        TypeError,
+        ValueError
+    ):
+        ranking_fuente = 100
+
+    if ranking_fuente <= 20:
+
+        puntaje += (
+            21 - ranking_fuente
+        ) * 1.25
+
+    # -------------------------------------------------
+    # 5. CITAS COMO SEÑAL SECUNDARIA
+    # -------------------------------------------------
+
+    citas = obtener_citas_seguras(
+        resultado
+    )
+
+    if citas > 0:
+
+        puntaje += min(
+            math.log1p(citas) * 2,
+            15
+        )
+
+    return round(
+        puntaje,
+        4
+    )
+
+
+def ordenar_resultados(
+    resultados,
+    orden,
+    tema
+):
+    """
+    Ordena las publicaciones según
     la opción seleccionada.
     """
+
+    for resultado in resultados:
+
+        resultado[
+            "_puntaje_relevancia"
+        ] = calcular_relevancia(
+            resultado,
+            tema
+        )
 
     if orden == "recientes":
 
         return sorted(
             resultados,
-            key=obtener_anio_seguro,
+            key=lambda resultado: (
+                obtener_anio_seguro(
+                    resultado
+                ) > 0,
+                obtener_anio_seguro(
+                    resultado
+                ),
+                resultado.get(
+                    "_puntaje_relevancia",
+                    0
+                )
+            ),
             reverse=True
         )
 
@@ -192,21 +480,57 @@ def ordenar_resultados(
 
         return sorted(
             resultados,
-            key=obtener_anio_seguro
+            key=lambda resultado: (
+                obtener_anio_seguro(
+                    resultado
+                ) == 0,
+                obtener_anio_seguro(
+                    resultado
+                )
+                if obtener_anio_seguro(
+                    resultado
+                ) > 0
+                else 9999,
+                -resultado.get(
+                    "_puntaje_relevancia",
+                    0
+                )
+            )
         )
 
     if orden == "citados":
 
         return sorted(
             resultados,
-            key=obtener_citas_seguras,
+            key=lambda resultado: (
+                obtener_citas_seguras(
+                    resultado
+                ),
+                resultado.get(
+                    "_puntaje_relevancia",
+                    0
+                )
+            ),
             reverse=True
         )
 
-    # Relevancia:
-    # se conserva el orden original
-    # entregado por las fuentes.
-    return resultados
+    # Relevancia global entre todas las fuentes.
+    return sorted(
+        resultados,
+        key=lambda resultado: (
+            resultado.get(
+                "_puntaje_relevancia",
+                0
+            ),
+            obtener_citas_seguras(
+                resultado
+            ),
+            obtener_anio_seguro(
+                resultado
+            )
+        ),
+        reverse=True
+    )
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -321,44 +645,55 @@ def index():
 
         else:
 
-            resultados_openalex = buscar_openalex(
-                tema=tema,
-                desde=desde,
-                hasta=hasta,
-                cantidad=cantidad
-            )
-
-            resultados_crossref = buscar_crossref(
-                tema=tema,
-                desde=desde,
-                hasta=hasta,
-                cantidad=cantidad
-            )
-
-            resultados_semantic_scholar = (
-                buscar_semantic_scholar(
-                    tema=tema,
-                    desde=desde,
-                    hasta=hasta,
-                    cantidad=cantidad
+            resultados_openalex = (
+                asignar_ranking_fuente(
+                    buscar_openalex(
+                        tema=tema,
+                        desde=desde,
+                        hasta=hasta,
+                        cantidad=cantidad
+                    )
                 )
             )
 
-            resultados_arxiv = buscar_arxiv(
-                tema=tema,
-                desde=desde,
-                hasta=hasta,
-                cantidad=cantidad
+            resultados_crossref = (
+                asignar_ranking_fuente(
+                    buscar_crossref(
+                        tema=tema,
+                        desde=desde,
+                        hasta=hasta,
+                        cantidad=cantidad
+                    )
+                )
+            )
+
+            resultados_semantic_scholar = (
+                asignar_ranking_fuente(
+                    buscar_semantic_scholar(
+                        tema=tema,
+                        desde=desde,
+                        hasta=hasta,
+                        cantidad=cantidad
+                    )
+                )
+            )
+
+            resultados_arxiv = (
+                asignar_ranking_fuente(
+                    buscar_arxiv(
+                        tema=tema,
+                        desde=desde,
+                        hasta=hasta,
+                        cantidad=cantidad
+                    )
+                )
             )
 
             resultados = (
                 resultados_openalex
-                +
-                resultados_crossref
-                +
-                resultados_semantic_scholar
-                +
-                resultados_arxiv
+                + resultados_crossref
+                + resultados_semantic_scholar
+                + resultados_arxiv
             )
 
             resultados = eliminar_duplicados(
@@ -368,10 +703,10 @@ def index():
             if idioma != "todos":
 
                 resultados = [
-                    r
-                    for r in resultados
+                    resultado
+                    for resultado in resultados
                     if str(
-                        r.get(
+                        resultado.get(
                             "idioma",
                             ""
                         )
@@ -382,11 +717,11 @@ def index():
             if tipo != "todos":
 
                 resultados = [
-                    r
-                    for r in resultados
+                    resultado
+                    for resultado in resultados
                     if tipo.lower()
                     in str(
-                        r.get(
+                        resultado.get(
                             "tipo",
                             ""
                         )
@@ -395,7 +730,8 @@ def index():
 
             resultados = ordenar_resultados(
                 resultados,
-                orden
+                orden,
+                tema
             )
 
             if not resultados:
