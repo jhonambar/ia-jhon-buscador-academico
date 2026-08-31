@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        IA Jhon - Búsqueda Académica
+    </title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #1f2937;
+        }
+
+        .contenedor {
+            width: 92%;
+            max-width: 1150px;
+            margin: 40px auto;
+        }
+
+        .cabecera {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .cabecera h1 {
+            font-size: 44px;
+            margin-bottom: 8px;
+        }
+
+        .cabecera p {
+            color: #6b7280;
+            font-size: 18px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 10px 35px rgba(0,0,0,.08);
+            margin-bottom: 30px;
+        }
+
+        .busqueda {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .busqueda input {
+            flex: 1;
+            padding: 15px;
+            font-size: 16px;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+        }
+
+        .busqueda button {
+            padding: 15px 26px;
+            border: none;
+            border-radius: 12px;
+            background: #111827;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .filtros {
+            display: grid;
+            grid-template-columns:
+                repeat(
+                    auto-fit,
+                    minmax(180px, 1fr)
+                );
+            gap: 14px;
+        }
+
+        .campo label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 6px;
+            color: #4b5563;
+        }
+
+        .campo input,
+        .campo select {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+        }
+
+        .fuentes {
+            margin-top: 20px;
+            padding-top: 18px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .etiquetas {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .etiqueta {
+            background: #eef2ff;
+            padding: 7px 11px;
+            border-radius: 999px;
+            font-size: 13px;
+        }
+
+        .mensaje {
+            background: #fff3cd;
+            border: 1px solid #ffe69c;
+            padding: 14px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .resumen-resultados {
+            margin-bottom: 18px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .resultado {
+            background: white;
+            border-radius: 18px;
+            padding: 22px;
+            margin-bottom: 18px;
+            box-shadow:
+                0 6px 22px rgba(0,0,0,.07);
+        }
+
+        .resultado h2 {
+            margin-top: 0;
+            font-size: 21px;
+        }
+
+        .meta {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 12px;
+        }
+
+        .acciones {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .boton {
+            display: inline-block;
+            padding: 10px 14px;
+            border-radius: 9px;
+            background: #111827;
+            color: white;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .boton.secundario {
+            background: #e5e7eb;
+            color: #111827;
+        }
+
+        .oa {
+            color: #047857;
+            font-weight: bold;
+        }
+
+        .cerrado {
+            color: #b91c1c;
+            font-weight: bold;
+        }
+
+        @media (max-width: 700px) {
+
+            .busqueda {
+                flex-direction: column;
+            }
+
+            .cabecera h1 {
+                font-size: 34px;
+            }
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="contenedor">
+
+    <div class="cabecera">
+
+        <h1>
+            IA Jhon
+        </h1>
+
+        <p>
+            Búsqueda Académica de Artículos,
+            Tesis y Revistas Científicas
+        </p>
+
+    </div>
+
+    <div class="panel">
+
+        <form
+            method="POST"
+            action="/"
+        >
+
+            <div class="busqueda">
+
+                <input
+                    type="text"
+                    name="tema"
+                    value="{{ tema }}"
+                    placeholder="Ejemplo: inteligencia artificial generativa"
+                    required
+                >
+
+                <button type="submit">
+                    Buscar
+                </button>
+
+            </div>
+
+            <div class="filtros">
+
+                <div class="campo">
+
+                    <label>
+                        Año desde
+                    </label>
+
+                    <input
+                        type="number"
+                        name="desde"
+                        value="{{ desde }}"
+                        min="1900"
+                        max="2100"
+                    >
+
+                </div>
+
+                <div class="campo">
+
+                    <label>
+                        Año hasta
+                    </label>
+
+                    <input
+                        type="number"
+                        name="hasta"
+                        value="{{ hasta }}"
+                        min="1900"
+                        max="2100"
+                    >
+
+                </div>
+
+                <div class="campo">
+
+                    <label>
+                        Tipo de publicación
+                    </label>
+
+                    <select name="tipo">
+
+                        <option
+                            value="todos"
+                            {% if tipo == "todos" %}
+                                selected
+                            {% endif %}
+                        >
+                            Todos
+                        </option>
+
+                        <option
+                            value="article"
+                            {% if tipo == "article" %}
+                                selected
+                            {% endif %}
+                        >
+                            Artículo
+                        </option>
+
+                        <option
+                            value="book"
+                            {% if tipo == "book" %}
+                                selected
+                            {% endif %}
+                        >
+                            Libro
+                        </option>
+
+                        <option
+                            value="thesis"
+                            {% if tipo == "thesis" %}
+                                selected
+                            {% endif %}
+                        >
+                            Tesis
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div class="campo">
+
+                    <label>
+                        Idioma
+                    </label>
+
+                    <select name="idioma">
+
+                        <option
+                            value="todos"
+                            {% if idioma == "todos" %}
+                                selected
+                            {% endif %}
+                        >
+                            Todos
+                        </option>
+
+                        <option
+                            value="es"
+                            {% if idioma == "es" %}
+                                selected
+                            {% endif %}
+                        >
+                            Español
+                        </option>
+
+                        <option
+                            value="en"
+                            {% if idioma == "en" %}
+                                selected
+                            {% endif %}
+                        >
+                            Inglés
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+        </form>
+
+        <div class="fuentes">
+
+            <strong>
+                Fuente activa:
+            </strong>
+
+            <div class="etiquetas">
+
+                <span class="etiqueta">
+                    OpenAlex ✅
+                </span>
+
+                <span class="etiqueta">
+                    Crossref próximamente
+                </span>
+
+                <span class="etiqueta">
+                    Semantic Scholar próximamente
+                </span>
+
+                <span class="etiqueta">
+                    arXiv próximamente
+                </span>
+
+                <span class="etiqueta">
+                    IEEE próximamente
+                </span>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    {% if mensaje %}
+
+        <div class="mensaje">
+            {{ mensaje }}
+        </div>
+
+    {% endif %}
+
+    {% if busqueda_realizada %}
+
+        <div class="resumen-resultados">
+
+            ✅ {{ resultados|length }}
+            publicaciones encontradas
+
+        </div>
+
+        {% for r in resultados %}
+
+            <div class="resultado">
+
+                <h2>
+                    {{ r.titulo }}
+                </h2>
+
+                <div class="meta">
+
+                    <strong>
+                        Autores:
+                    </strong>
+
+                    {{ r.autores }}
+
+                    <br>
+
+                    <strong>
+                        Año:
+                    </strong>
+
+                    {{ r.anio }}
+
+                    <br>
+
+                    <strong>
+                        Revista/Fuente:
+                    </strong>
+
+                    {{ r.revista }}
+
+                    <br>
+
+                    <strong>
+                        Tipo:
+                    </strong>
+
+                    {{ r.tipo }}
+
+                    <br>
+
+                    <strong>
+                        Idioma:
+                    </strong>
+
+                    {{ r.idioma }}
+
+                    <br>
+
+                    <strong>
+                        Citas:
+                    </strong>
+
+                    {{ r.citas }}
+
+                    <br>
+
+                    {% if r.doi %}
+
+                        <strong>
+                            DOI:
+                        </strong>
+
+                        {{ r.doi }}
+
+                        <br>
+
+                    {% endif %}
+
+                    <strong>
+                        Acceso:
+                    </strong>
+
+                    {% if r.acceso_abierto %}
+
+                        <span class="oa">
+                            Open Access
+                        </span>
+
+                    {% else %}
+
+                        <span class="cerrado">
+                            No abierto
+                        </span>
+
+                    {% endif %}
+
+                </div>
+
+                <div class="acciones">
+
+                    <a
+                        class="boton"
+                        href="{{ url_for('detalle', indice=loop.index0) }}"
+                    >
+                        Ver información completa
+                    </a>
+
+                    {% if r.url %}
+
+                        <a
+                            class="boton secundario"
+                            href="{{ r.url }}"
+                            target="_blank"
+                        >
+                            Ver publicación
+                        </a>
+
+                    {% endif %}
+
+                    {% if r.doi %}
+
+                        <a
+                            class="boton secundario"
+                            href="https://doi.org/{{ r.doi }}"
+                            target="_blank"
+                        >
+                            Abrir DOI
+                        </a>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+        {% endfor %}
+
+    {% endif %}
+
+</div>
+
+</body>
+</html>
