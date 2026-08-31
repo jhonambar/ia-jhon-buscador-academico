@@ -247,3 +247,87 @@ def buscar_openalex(tema, desde=2020, hasta=2026, cantidad=20):
         })
 
     return resultados
+def obtener_trabajo_openalex(id_openalex):
+    """
+    Obtiene una publicación específica de OpenAlex usando su ID.
+    """
+
+    if not id_openalex:
+        return None
+
+    if id_openalex.startswith("https://openalex.org/"):
+        id_openalex = id_openalex.replace("https://openalex.org/", "")
+
+    url = f"https://api.openalex.org/works/{id_openalex}"
+
+    try:
+        respuesta = requests.get(url, timeout=20)
+        respuesta.raise_for_status()
+        trabajo = respuesta.json()
+    except requests.RequestException as error:
+        print(f"[OpenAlex] Error al obtener detalle: {error}")
+        return None
+    except ValueError as error:
+        print(f"[OpenAlex] JSON inválido en detalle: {error}")
+        return None
+
+    autores = []
+    instituciones = []
+
+    for autoria in trabajo.get("authorships", []):
+        autor = autoria.get("author") or {}
+        nombre = autor.get("display_name")
+
+        if nombre:
+            autores.append(nombre)
+
+        for institucion in autoria.get("institutions", []):
+            nombre_institucion = institucion.get("display_name")
+
+            if nombre_institucion and nombre_institucion not in instituciones:
+                instituciones.append(nombre_institucion)
+
+    ubicacion = trabajo.get("primary_location") or {}
+    fuente = ubicacion.get("source") or {}
+
+    doi = trabajo.get("doi") or ""
+
+    if doi.startswith("https://doi.org/"):
+        doi = doi.replace("https://doi.org/", "")
+
+    open_access = trabajo.get("open_access") or {}
+
+    palabras_clave = []
+
+    for keyword in trabajo.get("keywords", []):
+        nombre_keyword = keyword.get("display_name")
+
+        if nombre_keyword:
+            palabras_clave.append(nombre_keyword)
+
+    if not palabras_clave:
+        for concepto in trabajo.get("concepts", [])[:8]:
+            nombre_concepto = concepto.get("display_name")
+
+            if nombre_concepto:
+                palabras_clave.append(nombre_concepto)
+
+    return {
+        "id_openalex": trabajo.get("id") or "",
+        "titulo": trabajo.get("display_name") or "Sin título",
+        "autores": ", ".join(autores) if autores else "Autor no disponible",
+        "instituciones": ", ".join(instituciones) if instituciones else "Institución no disponible",
+        "anio": trabajo.get("publication_year") or "",
+        "fecha_publicacion": trabajo.get("publication_date") or "",
+        "revista": fuente.get("display_name") or "Fuente no disponible",
+        "doi": doi,
+        "url": ubicacion.get("landing_page_url") or open_access.get("oa_url") or trabajo.get("doi") or "",
+        "url_open_access": open_access.get("oa_url") or "",
+        "citas": trabajo.get("cited_by_count", 0),
+        "idioma": trabajo.get("language") or "N/D",
+        "tipo": trabajo.get("type") or "N/D",
+        "acceso_abierto": open_access.get("is_oa", False),
+        "abstract": reconstruir_abstract(trabajo.get("abstract_inverted_index")),
+        "palabras_clave": ", ".join(palabras_clave) if palabras_clave else "No disponibles",
+        "fuente_busqueda": "OpenAlex"
+    }

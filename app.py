@@ -1,16 +1,12 @@
 from flask import Flask, render_template, request
-from services.openalex import buscar_openalex
+from services.openalex import buscar_openalex, obtener_trabajo_openalex
 
 
 app = Flask(__name__)
 
-ULTIMOS_RESULTADOS = []
-
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-
-    global ULTIMOS_RESULTADOS
 
     resultados = []
     mensaje = ""
@@ -31,7 +27,6 @@ def index():
         try:
             desde = int(request.form.get("desde", 2020))
             hasta = int(request.form.get("hasta", 2026))
-
         except ValueError:
             desde = 2020
             hasta = 2026
@@ -60,28 +55,22 @@ def index():
 
                 resultados = [
                     r for r in resultados
-                    if str(
-                        r.get("idioma", "")
-                    ).lower() == idioma.lower()
+                    if str(r.get("idioma", "")).lower() == idioma.lower()
                 ]
 
             if tipo != "todos":
 
                 resultados = [
                     r for r in resultados
-                    if tipo.lower()
-                    in str(
-                        r.get("tipo", "")
-                    ).lower()
+                    if tipo.lower() in str(r.get("tipo", "")).lower()
                 ]
 
             if not resultados:
+
                 mensaje = (
                     "No se encontraron publicaciones "
                     "con esos filtros."
                 )
-
-            ULTIMOS_RESULTADOS = resultados
 
     return render_template(
         "index.html",
@@ -96,13 +85,13 @@ def index():
     )
 
 
-@app.route("/detalle/<int:indice>")
-def detalle(indice):
+@app.route("/detalle/<id_openalex>")
+def detalle(id_openalex):
 
-    if indice < 0 or indice >= len(ULTIMOS_RESULTADOS):
+    articulo = obtener_trabajo_openalex(id_openalex)
+
+    if not articulo:
         return "Publicación no encontrada", 404
-
-    articulo = ULTIMOS_RESULTADOS[indice]
 
     return render_template(
         "detalle.html",

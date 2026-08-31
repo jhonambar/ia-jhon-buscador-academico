@@ -513,12 +513,19 @@
 
                 <div class="acciones">
 
-                    <a
-                        class="boton"
-                        href="{{ url_for('detalle', indice=loop.index0) }}"
-                    >
-                        Ver información completa
-                    </a>
+                    {% if r.id_openalex %}
+
+                        <a
+                            class="boton"
+                            href="{{ url_for(
+                                'detalle',
+                                id_openalex=r.id_openalex.split('/')[-1]
+                            ) }}"
+                        >
+                            Ver información completa
+                        </a>
+
+                    {% endif %}
 
                     {% if r.url %}
 
@@ -526,6 +533,7 @@
                             class="boton secundario"
                             href="{{ r.url }}"
                             target="_blank"
+                            rel="noopener noreferrer"
                         >
                             Ver publicación
                         </a>
@@ -538,6 +546,7 @@
                             class="boton secundario"
                             href="https://doi.org/{{ r.doi }}"
                             target="_blank"
+                            rel="noopener noreferrer"
                         >
                             Abrir DOI
                         </a>
