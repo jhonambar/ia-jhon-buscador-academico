@@ -1,5 +1,9 @@
+import html
 import re
 import unicodedata
+
+from functools import lru_cache
+
 import requests
 
 
@@ -39,13 +43,15 @@ TRADUCCIONES_ACADEMICAS = {
 def normalizar_consulta(texto):
     """
     Normaliza una consulta para facilitar
-    comparaciones y traducciones.
+    comparaciones, traducciones y caché.
     """
 
     if not texto:
         return ""
 
-    texto = str(texto).strip().lower()
+    texto = str(
+        texto
+    ).strip().lower()
 
     texto = unicodedata.normalize(
         "NFKD",
@@ -55,7 +61,9 @@ def normalizar_consulta(texto):
     texto = "".join(
         caracter
         for caracter in texto
-        if not unicodedata.combining(caracter)
+        if not unicodedata.combining(
+            caracter
+        )
     )
 
     texto = re.sub(
@@ -92,12 +100,48 @@ def obtener_traduccion_local(tema):
     )
 
 
+def es_consulta_inglesa_conocida(tema):
+    """
+    Comprueba si una consulta corresponde
+    a una traducción inglesa ya conocida
+    en el diccionario académico.
+
+    Evita enviar innecesariamente esos términos
+    a MyMemory como si fueran español.
+    """
+
+    consulta = normalizar_consulta(
+        tema
+    )
+
+    if not consulta:
+        return False
+
+    traducciones_ingles = {
+        normalizar_consulta(
+            traduccion
+        )
+        for traduccion
+        in TRADUCCIONES_ACADEMICAS.values()
+    }
+
+    return (
+        consulta
+        in traducciones_ingles
+    )
+
+
+@lru_cache(maxsize=256)
 def traducir_con_mymemory(tema):
     """
     Intenta traducir automáticamente
     una consulta del español al inglés.
 
-    Si el servicio externo falla,
+    La respuesta se guarda temporalmente
+    en caché para evitar consultas repetidas
+    al servicio externo.
+
+    Si el servicio falla,
     devuelve una cadena vacía.
     """
 
@@ -121,18 +165,26 @@ def traducir_con_mymemory(tema):
         )
 
         if respuesta.status_code != 200:
+
             print(
                 "[Traducción] MyMemory respondió "
                 f"HTTP {respuesta.status_code}"
             )
+
             return ""
 
         datos = respuesta.json()
 
         traduccion = (
             datos
-            .get("responseData", {})
-            .get("translatedText", "")
+            .get(
+                "responseData",
+                {}
+            )
+            .get(
+                "translatedText",
+                ""
+            )
         )
 
         traduccion = (
@@ -140,12 +192,20 @@ def traducir_con_mymemory(tema):
             or ""
         ).strip()
 
+        traduccion = html.unescape(
+            traduccion
+        )
+
         if not traduccion:
             return ""
 
         if (
-            normalizar_consulta(traduccion)
-            == normalizar_consulta(tema)
+            normalizar_consulta(
+                traduccion
+            )
+            == normalizar_consulta(
+                tema
+            )
         ):
             return ""
 
@@ -170,6 +230,7 @@ def traducir_con_mymemory(tema):
         return ""
 
 
+@lru_cache(maxsize=256)
 def traducir_consulta_academica(tema):
     """
     Traduce una consulta académica
@@ -178,8 +239,13 @@ def traducir_consulta_academica(tema):
     Prioridad:
 
     1. Diccionario académico local.
-    2. Traducción automática MyMemory.
-    3. Consulta original como respaldo.
+    2. Reconocimiento de términos ingleses conocidos.
+    3. Traducción automática con MyMemory.
+    4. Consulta original como respaldo.
+
+    El resultado se almacena temporalmente
+    en caché para reutilizarlo entre
+    las distintas fuentes académicas.
     """
 
     tema = (
@@ -190,15 +256,24 @@ def traducir_consulta_academica(tema):
     if not tema:
         return ""
 
-    traduccion_local = obtener_traduccion_local(
-        tema
+    traduccion_local = (
+        obtener_traduccion_local(
+            tema
+        )
     )
 
     if traduccion_local:
         return traduccion_local
 
-    traduccion_automatica = traducir_con_mymemory(
+    if es_consulta_inglesa_conocida(
         tema
+    ):
+        return tema
+
+    traduccion_automatica = (
+        traducir_con_mymemory(
+            tema
+        )
     )
 
     if traduccion_automatica:
@@ -231,15 +306,22 @@ def preparar_consultas_academicas(tema):
         tema
     ]
 
-    traduccion = traducir_consulta_academica(
-        tema
+    traduccion = (
+        traducir_consulta_academica(
+            tema
+        )
     )
 
     if (
         traduccion
-        and normalizar_consulta(traduccion)
-        != normalizar_consulta(tema)
+        and normalizar_consulta(
+            traduccion
+        )
+        != normalizar_consulta(
+            tema
+        )
     ):
+
         consultas.append(
             traduccion
         )
