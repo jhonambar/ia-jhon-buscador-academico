@@ -10,6 +10,11 @@ from services.crossref import (
     obtener_trabajo_crossref
 )
 
+from services.semantic_scholar import (
+    buscar_semantic_scholar,
+    obtener_trabajo_semantic_scholar
+)
+
 
 app = Flask(__name__)
 
@@ -94,7 +99,10 @@ def eliminar_duplicados(resultados):
 
         else:
 
-            if titulo and titulo in titulos_vistos:
+            if (
+                titulo
+                and titulo in titulos_vistos
+            ):
                 continue
 
         if titulo:
@@ -117,8 +125,6 @@ def index():
     hasta = 2026
     tipo = "todos"
     idioma = "todos"
-
-    # Cantidad predeterminada por cada fuente académica.
     cantidad = 20
 
     if request.method == "POST":
@@ -174,7 +180,6 @@ def index():
 
             cantidad = 20
 
-        # Evita cantidades inválidas o excesivas.
         cantidad = min(
             max(cantidad, 1),
             100
@@ -210,10 +215,21 @@ def index():
                 cantidad=cantidad
             )
 
+            resultados_semantic_scholar = (
+                buscar_semantic_scholar(
+                    tema=tema,
+                    desde=desde,
+                    hasta=hasta,
+                    cantidad=cantidad
+                )
+            )
+
             resultados = (
                 resultados_openalex
                 +
                 resultados_crossref
+                +
+                resultados_semantic_scholar
             )
 
             resultados = eliminar_duplicados(
@@ -315,6 +331,66 @@ def detalle_crossref():
     articulo = obtener_trabajo_crossref(
         doi
     )
+
+    if not articulo:
+
+        return (
+            "Publicación no encontrada",
+            404
+        )
+
+    return render_template(
+        "detalle.html",
+        articulo=articulo
+    )
+
+
+@app.route("/detalle/semantic-scholar")
+def detalle_semantic_scholar():
+    """
+    Muestra el detalle de una publicación
+    obtenida desde Semantic Scholar.
+    """
+
+    paper_id = request.args.get(
+        "paper_id",
+        ""
+    ).strip()
+
+    if not paper_id:
+
+        return (
+            "ID de Semantic Scholar "
+            "no proporcionado",
+            400
+        )
+
+    articulo = obtener_trabajo_semantic_scholar(
+        paper_id
+    )
+
+    if (
+        articulo
+        and articulo.get("_estado")
+        == "limite_api"
+    ):
+
+        return render_template(
+            "error_api.html",
+            titulo=(
+                "Semantic Scholar "
+                "temporalmente limitado"
+            ),
+            mensaje=(
+                "Semantic Scholar alcanzó "
+                "temporalmente su límite de "
+                "consultas. La publicación puede "
+                "existir, pero en este momento no "
+                "es posible recuperar su información "
+                "completa. Intenta nuevamente dentro "
+                "de unos minutos."
+            )
+        ), 429
 
     if not articulo:
 

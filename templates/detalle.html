@@ -188,6 +188,11 @@
             font-weight: bold;
         }
 
+        .desconocido {
+            color: #92400e;
+            font-weight: bold;
+        }
+
         .bloque {
             margin-top: 30px;
         }
@@ -498,6 +503,12 @@
 
                         <span class="oa">
                             Acceso abierto
+                        </span>
+
+                    {% elif articulo.fuente_busqueda in ["Crossref", "Semantic Scholar"] %}
+
+                        <span class="desconocido">
+                            Acceso no determinado
                         </span>
 
                     {% else %}
